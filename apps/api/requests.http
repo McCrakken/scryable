@@ -1,0 +1,30 @@
+### Health Check
+GET http://localhost:3000/health
+
+### Register Owner
+POST http://localhost:3000/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "owner@test.com",
+  "password": "Secret123",
+  "displayName": "Game Shop",
+  "role": "owner"
+}
+
+### Login
+POST http://localhost:3000/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "owner@test.com",
+  "password": "Secret123"
+}
+
+### Refresh Token (paste your token below)
+POST http://localhost:3000/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "<paste_refresh_token_here>"
+}

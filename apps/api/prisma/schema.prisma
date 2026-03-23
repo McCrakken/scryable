@@ -1,0 +1,117 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  owner
+  user
+}
+
+enum Platform {
+  NES
+  SNES
+  N64
+  GameCube
+  Wii
+  WiiU
+  Switch
+  GameBoy
+  GBA
+  DS
+  ThreeDS
+  Genesis
+  Saturn
+  Dreamcast
+  PS1
+  PS2
+  PS3
+  PS4
+  PS5
+  PSP
+  PSVita
+  Xbox
+  Xbox360
+  XboxOne
+  XboxSeriesX
+  Atari2600
+  TurboGrafx16
+  NeoGeo
+  Other
+}
+
+enum Condition {
+  sealed
+  cib
+  loose
+  fair
+  poor
+}
+
+enum Category {
+  game
+  console
+  accessory
+  strategy_guide
+  merchandise
+  other
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  displayName  String
+  role         Role     @default(user)
+  stores       Store[]
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("users")
+}
+
+model Store {
+  id          String          @id @default(uuid())
+  owner       User            @relation(fields: [ownerId], references: [id])
+  ownerId     String
+  name        String
+  description String          @default("")
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  phone       String?
+  website     String?
+  items       InventoryItem[]
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  @@map("stores")
+}
+
+model InventoryItem {
+  id          String    @id @default(uuid())
+  store       Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  storeId     String
+  title       String
+  description String    @default("")
+  platform    Platform
+  category    Category
+  condition   Condition
+  price       Decimal   @db.Decimal(8, 2)
+  imageUrls   String[]
+  isPromoted  Boolean   @default(false)
+  isSold      Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([storeId])
+  @@index([platform])
+  @@index([category])
+  @@index([isSold])
+  @@map("inventory_items")
+}

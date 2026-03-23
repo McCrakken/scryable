@@ -1,0 +1,21 @@
+{
+  "name": "scryable",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Inventory platform for second-hand video game stores",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "api": "yarn workspace @scryable/api dev",
+    "web": "yarn workspace @scryable/web dev",
+    "lint": "yarn workspaces foreach --all run lint",
+    "typecheck": "yarn workspaces foreach --all run typecheck",
+    "test": "yarn workspaces foreach --all run test"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "packageManager": "yarn@4.13.0"
+}

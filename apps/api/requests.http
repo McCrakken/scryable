@@ -1,6 +1,10 @@
 ### Health Check
 GET http://localhost:3000/health
 
+
+### ─── Auth ────────────────────────────────────────────
+
+
 ### Register Owner
 POST http://localhost:3000/api/auth/register
 Content-Type: application/json
@@ -28,3 +32,110 @@ Content-Type: application/json
 {
   "refreshToken": "<paste_refresh_token_here>"
 }
+
+
+### ─── Stores ────────────────────────────────────────────
+
+
+### Get all stores (public)
+GET http://localhost:3000/api/stores
+
+### Get my stores (owner)
+GET http://localhost:3000/api/stores/mine
+Authorization: Bearer <paste_access_token_here>
+
+### Create a store (owner)
+POST http://localhost:3000/api/stores
+Content-Type: application/json
+Authorization: Bearer <paste_access_token_here>
+
+{
+  "name": "Pixel Vault",
+  "description": "Retro games and consoles",
+  "address": "123 Main St",
+  "city": "Portland",
+  "state": "OR",
+  "zipCode": "97201",
+  "phone": "503-555-0100",
+  "website": "https://pixelvault.example.com"
+}
+
+### Get store by ID (public)
+GET http://localhost:3000/api/stores/<paste_store_id_here>
+
+### Update a store (owner)
+PATCH http://localhost:3000/api/stores/<paste_store_id_here>
+Content-Type: application/json
+Authorization: Bearer <paste_access_token_here>
+
+{
+  "description": "Updated description — best retro shop in town!"
+}
+
+### Delete a store (owner)
+DELETE http://localhost:3000/api/stores/<paste_store_id_here>
+Authorization: Bearer <paste_access_token_here>
+
+
+### ─── Items ──────────────────────────────────────────────
+
+
+### Get all items for a store (public)
+GET http://localhost:3000/api/stores/<paste_store_id_here>/items
+
+### Get single item (public)
+GET http://localhost:3000/api/stores/items/<paste_item_id_here>
+
+### Create an item (owner)
+POST http://localhost:3000/api/stores/<paste_store_id_here>/items
+Content-Type: application/json
+Authorization: Bearer <paste_access_token_here>
+
+{
+  "title": "Super Mario World",
+  "description": "Complete in box, manual included",
+  "platform": "SNES",
+  "category": "game",
+  "condition": "cib",
+  "price": 49.99,
+  "imageUrls": [],
+  "isPromoted": false
+}
+
+### Update an item (owner) — mark as sold
+PATCH http://localhost:3000/api/stores/items/<paste_item_id_here>
+Content-Type: application/json
+Authorization: Bearer <paste_access_token_here>
+
+{
+  "isSold": true
+}
+
+### Delete an item (owner)
+DELETE http://localhost:3000/api/stores/items/<paste_item_id_here>
+Authorization: Bearer <paste_access_token_here>
+
+
+### ─── Search ─────────────────────────────────────────────
+
+
+### Search all available items
+GET http://localhost:3000/api/search
+
+### Search by text query
+GET http://localhost:3000/api/search?query=mario
+
+### Filter by platform
+GET http://localhost:3000/api/search?platform=SNES
+
+### Filter by platform + condition
+GET http://localhost:3000/api/search?platform=SNES&condition=cib
+
+### Price range filter
+GET http://localhost:3000/api/search?minPrice=10&maxPrice=50
+
+### Full search — text + filters + pagination
+GET http://localhost:3000/api/search?query=mario&platform=SNES&condition=cib&minPrice=10&maxPrice=100&page=1&limit=20
+
+### Search within a specific store
+GET http://localhost:3000/api/search?storeId=<paste_store_id_here>&query=zelda

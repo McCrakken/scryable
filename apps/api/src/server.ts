@@ -4,6 +4,9 @@ dotenv.config();
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
 import { authRoutes } from './routes/auth.routes';
+import { storeRoutes } from "./routes/store.routes";
+import { itemRoutes } from "./routes/item.routes";
+import {searchRoutes} from "./routes/search.routes";
 
 const app = Fastify({
   logger: {
@@ -28,9 +31,9 @@ async function start() {
 
   // Register routes
   await app.register(authRoutes, { prefix: '/api/auth' });
-  // await app.register(storeRoutes, { prefix: '/api/stores' });
-  // await app.register(itemRoutes, { prefix: '/api/items' });
-  // await app.register(searchRoutes, { prefix: '/api/search' });
+  await app.register(storeRoutes, { prefix: '/api/stores' });
+  await app.register(itemRoutes, { prefix: '/api/items' });
+  await app.register(searchRoutes, { prefix: '/api/search' });
 
   const port = Number(process.env.PORT) || 3000;
   await app.listen({ port, host: '0.0.0.0' });

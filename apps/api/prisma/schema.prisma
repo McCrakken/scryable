@@ -22,8 +22,8 @@ enum Platform {
   Switch
   GameBoy
   GBA
-  DS
-  ThreeDS
+  NDS
+  N3DS
   Genesis
   Saturn
   Dreamcast

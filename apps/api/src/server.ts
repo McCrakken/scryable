@@ -32,7 +32,7 @@ async function start() {
   // Register routes
   await app.register(authRoutes, { prefix: '/api/auth' });
   await app.register(storeRoutes, { prefix: '/api/stores' });
-  await app.register(itemRoutes, { prefix: '/api/items' });
+  await app.register(itemRoutes, { prefix: '/api/stores' });
   await app.register(searchRoutes, { prefix: '/api/search' });
 
   const port = Number(process.env.PORT) || 3000;

@@ -29,6 +29,7 @@ build/
 .idea/
 *.iml
 .vscode/
+http-client.private.env.json
 
 # OS
 .DS_Store

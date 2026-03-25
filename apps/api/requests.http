@@ -1,12 +1,10 @@
 ### Health Check
-GET http://localhost:3000/health
+GET {{baseUrl}}/health
 
-
-### ─── Auth ────────────────────────────────────────────
-
+### ─── Auth ───────────────────────────────────────────────
 
 ### Register Owner
-POST http://localhost:3000/api/auth/register
+POST {{baseUrl}}/api/auth/register
 Content-Type: application/json
 
 {
@@ -17,7 +15,7 @@ Content-Type: application/json
 }
 
 ### Login
-POST http://localhost:3000/api/auth/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 
 {
@@ -25,29 +23,30 @@ Content-Type: application/json
   "password": "Secret123"
 }
 
-### Refresh Token (paste your token below)
-POST http://localhost:3000/api/auth/refresh
+### Refresh Token
+POST {{baseUrl}}/api/auth/refresh
 Content-Type: application/json
 
 {
-  "refreshToken": "<paste_refresh_token_here>"
+  "refreshToken": "{{refreshToken}}"
 }
 
-
-### ─── Stores ────────────────────────────────────────────
-
+### ─── Stores ─────────────────────────────────────────────
 
 ### Get all stores (public)
-GET http://localhost:3000/api/stores
+GET {{baseUrl}}/api/stores
 
 ### Get my stores (owner)
-GET http://localhost:3000/api/stores/mine
-Authorization: Bearer <paste_access_token_here>
+GET {{baseUrl}}/api/stores/mine
+Authorization: Bearer {{accessToken}}
+
+### Get store by ID (public)
+GET {{baseUrl}}/api/stores/{{storeId}}
 
 ### Create a store (owner)
-POST http://localhost:3000/api/stores
+POST {{baseUrl}}/api/stores
 Content-Type: application/json
-Authorization: Bearer <paste_access_token_here>
+Authorization: Bearer {{accessToken}}
 
 {
   "name": "Pixel Vault",
@@ -60,36 +59,31 @@ Authorization: Bearer <paste_access_token_here>
   "website": "https://pixelvault.example.com"
 }
 
-### Get store by ID (public)
-GET http://localhost:3000/api/stores/<paste_store_id_here>
-
 ### Update a store (owner)
-PATCH http://localhost:3000/api/stores/<paste_store_id_here>
+PATCH {{baseUrl}}/api/stores/{{storeId}}
 Content-Type: application/json
-Authorization: Bearer <paste_access_token_here>
+Authorization: Bearer {{accessToken}}
 
 {
-  "description": "Updated description — best retro shop in town!"
+  "description": "Updated — best retro shop in town!"
 }
 
 ### Delete a store (owner)
-DELETE http://localhost:3000/api/stores/<paste_store_id_here>
-Authorization: Bearer <paste_access_token_here>
-
+DELETE {{baseUrl}}/api/stores/{{storeId}}
+Authorization: Bearer {{accessToken}}
 
 ### ─── Items ──────────────────────────────────────────────
 
-
 ### Get all items for a store (public)
-GET http://localhost:3000/api/stores/<paste_store_id_here>/items
+GET {{baseUrl}}/api/stores/{{storeId}}/items
 
 ### Get single item (public)
-GET http://localhost:3000/api/stores/items/<paste_item_id_here>
+GET {{baseUrl}}/api/stores/{{storeId}}/items/{{itemId}}
 
 ### Create an item (owner)
-POST http://localhost:3000/api/stores/<paste_store_id_here>/items
+POST {{baseUrl}}/api/stores/{{storeId}}/items
 Content-Type: application/json
-Authorization: Bearer <paste_access_token_here>
+Authorization: Bearer {{accessToken}}
 
 {
   "title": "Super Mario World",
@@ -102,40 +96,38 @@ Authorization: Bearer <paste_access_token_here>
   "isPromoted": false
 }
 
-### Update an item (owner) — mark as sold
-PATCH http://localhost:3000/api/stores/items/<paste_item_id_here>
+### Update an item (owner)
+PATCH {{baseUrl}}/api/stores/{{storeId}}/items/{{itemId}}
 Content-Type: application/json
-Authorization: Bearer <paste_access_token_here>
+Authorization: Bearer {{accessToken}}
 
 {
   "isSold": true
 }
 
 ### Delete an item (owner)
-DELETE http://localhost:3000/api/stores/items/<paste_item_id_here>
-Authorization: Bearer <paste_access_token_here>
-
+DELETE {{baseUrl}}/api/stores/{{storeId}}/items/{{itemId}}
+Authorization: Bearer {{accessToken}}
 
 ### ─── Search ─────────────────────────────────────────────
 
-
 ### Search all available items
-GET http://localhost:3000/api/search
+GET {{baseUrl}}/api/search
 
 ### Search by text query
-GET http://localhost:3000/api/search?query=mario
+GET {{baseUrl}}/api/search?query=mario
 
 ### Filter by platform
-GET http://localhost:3000/api/search?platform=SNES
+GET {{baseUrl}}/api/search?platform=SNES
 
 ### Filter by platform + condition
-GET http://localhost:3000/api/search?platform=SNES&condition=cib
+GET {{baseUrl}}/api/search?platform=SNES&condition=cib
 
 ### Price range filter
-GET http://localhost:3000/api/search?minPrice=10&maxPrice=50
+GET {{baseUrl}}/api/search?minPrice=10&maxPrice=50
 
-### Full search — text + filters + pagination
-GET http://localhost:3000/api/search?query=mario&platform=SNES&condition=cib&minPrice=10&maxPrice=100&page=1&limit=20
+### Full search with pagination
+GET {{baseUrl}}/api/search?query=mario&platform=SNES&condition=cib&minPrice=10&maxPrice=100&page=1&limit=20
 
 ### Search within a specific store
-GET http://localhost:3000/api/search?storeId=<paste_store_id_here>&query=zelda
+GET {{baseUrl}}/api/search?storeId={{storeId}}&query=zelda

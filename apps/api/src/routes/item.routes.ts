@@ -39,7 +39,7 @@ export async function itemRoutes(app: FastifyInstance) {
   });
 
   // GET /api/items/:id — public
-  app.get('/items/:id', async (request, reply) => {
+  app.get('/:storeId/items/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     const item = await getItemById(id);
     if (!item) return reply.status(404).send({ error: 'Item not found' });
@@ -67,7 +67,7 @@ export async function itemRoutes(app: FastifyInstance) {
 
   // PATCH /api/items/:id — owner only
   app.patch(
-    '/items/:id',
+    '/:storeId/items/:id',
     { preHandler: [authenticate, requireOwner] },
     async (request, reply) => {
       const { id } = request.params as { id: string };
@@ -86,7 +86,7 @@ export async function itemRoutes(app: FastifyInstance) {
 
   // DELETE /api/items/:id — owner only
   app.delete(
-    '/items/:id',
+    '/:storeId/items/:id',
     { preHandler: [authenticate, requireOwner] },
     async (request, reply) => {
       const { id } = request.params as { id: string };

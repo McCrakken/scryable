@@ -32,3 +32,9 @@ export class ValidationError extends AppError {
     super(400, message, 'VALIDATION_ERROR');
   }
 }
+
+export class RateLimitExceededError extends AppError {
+  constructor(message: string) {
+    super(429, message, 'RATE_LIMIT_EXCEEDED');
+  }
+}

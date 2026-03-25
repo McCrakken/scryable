@@ -10,89 +10,115 @@ import {
 } from '../services/auth.service';
 
 export async function authRoutes(app: FastifyInstance) {
-  // POST /api/auth/register
-  app.post('/register', async (request, reply) => {
-    const result = registerSchema.safeParse(request.body);
-    if (!result.success) {
-      return reply.status(400).send({ error: 'Validation failed', details: result.error.flatten() });
-    }
-
-    const { email, password, displayName, role } = result.data;
-
-    // No need for manual duplicate check — Prisma P2002 is caught by error handler
-    const user = await createUser(email, password, displayName, role);
-
-    const tokenPayload = { userId: user.id, email: user.email, role: user.role };
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
-
-    return reply.status(201).send({
-      user: {
-        ...user,
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString(),
+  // POST /api/auth/register — strict: 5 attempts per 15 minutes
+  app.post(
+    '/register',
+    {
+      config: {
+        rateLimit: { max: 5, timeWindow: '15 minutes' },
       },
-      accessToken,
-      refreshToken,
-    });
-  });
+    },
+    async (request, reply) => {
+      const result = registerSchema.safeParse(request.body);
+      if (!result.success) {
+        return reply
+          .status(400)
+          .send({ error: 'Validation failed', details: result.error.flatten() });
+      }
 
-  // POST /api/auth/login
-  app.post('/login', async (request, reply) => {
-    const result = loginSchema.safeParse(request.body);
-    if (!result.success) {
-      return reply.status(400).send({ error: 'Validation failed', details: result.error.flatten() });
-    }
+      const { email, password, displayName, role } = result.data;
 
-    const { email, password } = result.data;
+      const user = await createUser(email, password, displayName, role);
 
-    const user = await findUserByEmail(email);
-    if (!user) {
-      return reply.status(401).send({ error: 'Invalid email or password' });
-    }
+      const tokenPayload = { userId: user.id, email: user.email, role: user.role };
+      const accessToken = generateAccessToken(tokenPayload);
+      const refreshToken = generateRefreshToken(tokenPayload);
 
-    const valid = await verifyPassword(password, user.passwordHash);
-    if (!valid) {
-      return reply.status(401).send({ error: 'Invalid email or password' });
-    }
+      return reply.status(201).send({
+        user: {
+          ...user,
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString(),
+        },
+        accessToken,
+        refreshToken,
+      });
+    },
+  );
 
-    const tokenPayload = { userId: user.id, email: user.email, role: user.role };
-    const accessToken = generateAccessToken(tokenPayload);
-    const refreshToken = generateRefreshToken(tokenPayload);
-
-    return reply.send({
-      user: {
-        id: user.id,
-        email: user.email,
-        displayName: user.displayName,
-        role: user.role,
-        createdAt: user.createdAt.toISOString(),
-        updatedAt: user.updatedAt.toISOString(),
+  // POST /api/auth/login — strict: 10 attempts per 15 minutes
+  app.post(
+    '/login',
+    {
+      config: {
+        rateLimit: { max: 10, timeWindow: '15 minutes' },
       },
-      accessToken,
-      refreshToken,
-    });
-  });
+    },
+    async (request, reply) => {
+      const result = loginSchema.safeParse(request.body);
+      if (!result.success) {
+        return reply
+          .status(400)
+          .send({ error: 'Validation failed', details: result.error.flatten() });
+      }
 
-  // POST /api/auth/refresh
-  app.post('/refresh', async (request, reply) => {
-    const { refreshToken } = request.body as { refreshToken?: string };
+      const { email, password } = result.data;
 
-    if (!refreshToken) {
-      return reply.status(400).send({ error: 'Refresh token is required' });
-    }
+      const user = await findUserByEmail(email);
+      if (!user) {
+        return reply.status(401).send({ error: 'Invalid email or password' });
+      }
 
-    try {
-      const payload = verifyRefreshToken(refreshToken);
+      const valid = await verifyPassword(password, user.passwordHash);
+      if (!valid) {
+        return reply.status(401).send({ error: 'Invalid email or password' });
+      }
 
-      // Issue new token pair
-      const tokenPayload = { userId: payload.userId, email: payload.email, role: payload.role };
-      const newAccessToken = generateAccessToken(tokenPayload);
-      const newRefreshToken = generateRefreshToken(tokenPayload);
+      const tokenPayload = { userId: user.id, email: user.email, role: user.role };
+      const accessToken = generateAccessToken(tokenPayload);
+      const refreshToken = generateRefreshToken(tokenPayload);
 
-      return reply.send({ accessToken: newAccessToken, refreshToken: newRefreshToken });
-    } catch {
-      return reply.status(401).send({ error: 'Invalid or expired refresh token' });
-    }
-  });
+      return reply.send({
+        user: {
+          id: user.id,
+          email: user.email,
+          displayName: user.displayName,
+          role: user.role,
+          createdAt: user.createdAt.toISOString(),
+          updatedAt: user.updatedAt.toISOString(),
+        },
+        accessToken,
+        refreshToken,
+      });
+    },
+  );
+
+  // POST /api/auth/refresh — moderate: 20 per 15 minutes
+  app.post(
+    '/refresh',
+    {
+      config: {
+        rateLimit: { max: 20, timeWindow: '15 minutes' },
+      },
+    },
+    async (request, reply) => {
+      const { refreshToken } = request.body as { refreshToken?: string };
+
+      if (!refreshToken) {
+        return reply.status(400).send({ error: 'Refresh token is required' });
+      }
+
+      try {
+        const payload = verifyRefreshToken(refreshToken);
+
+        const tokenPayload = { userId: payload.userId, email: payload.email, role: payload.role };
+        const newAccessToken = generateAccessToken(tokenPayload);
+        const newRefreshToken = generateRefreshToken(tokenPayload);
+
+        return reply.send({ accessToken: newAccessToken, refreshToken: newRefreshToken });
+      } catch {
+        return reply.status(401).send({ error: 'Invalid or expired refresh token' });
+      }
+    },
+  );
 }

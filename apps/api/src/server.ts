@@ -2,6 +2,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import Fastify from 'fastify';
+import rateLimit from '@fastify/rate-limit';
 import cors from '@fastify/cors';
 import { authRoutes } from './routes/auth.routes';
 import { storeRoutes } from "./routes/store.routes";
@@ -25,7 +26,25 @@ async function start() {
     credentials: true,
   });
 
+  await app.register(rateLimit, {
+    max: 100,
+    timeWindow: '1 minute',
+    keyGenerator: (request) => request.ip,
+  })
+
   await app.register(errorHandler)
+
+  app.setNotFoundHandler(
+    {
+      preHandler: app.rateLimit({ max: 4, timeWindow: '1 minute' }),
+    },
+    (_request, reply) => {
+      return reply.status(404).send({
+        error: 'Route not found',
+        code: 'NOT_FOUND',
+      });
+    },
+  );
 
   // Health check
   app.get('/health', async () => {

@@ -19,12 +19,7 @@ export async function authRoutes(app: FastifyInstance) {
 
     const { email, password, displayName, role } = result.data;
 
-    // Check if user already exists
-    const existing = await findUserByEmail(email);
-    if (existing) {
-      return reply.status(409).send({ error: 'Email already registered' });
-    }
-
+    // No need for manual duplicate check — Prisma P2002 is caught by error handler
     const user = await createUser(email, password, displayName, role);
 
     const tokenPayload = { userId: user.id, email: user.email, role: user.role };

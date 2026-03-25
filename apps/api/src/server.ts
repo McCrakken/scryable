@@ -7,6 +7,7 @@ import { authRoutes } from './routes/auth.routes';
 import { storeRoutes } from "./routes/store.routes";
 import { itemRoutes } from "./routes/item.routes";
 import {searchRoutes} from "./routes/search.routes";
+import {errorHandler} from "./lib/error-handler";
 
 const app = Fastify({
   logger: {
@@ -23,6 +24,8 @@ async function start() {
     origin: ['http://localhost:5173'], // Vite dev server
     credentials: true,
   });
+
+  await app.register(errorHandler)
 
   // Health check
   app.get('/health', async () => {

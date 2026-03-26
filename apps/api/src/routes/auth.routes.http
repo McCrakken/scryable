@@ -1,0 +1,27 @@
+### Register Owner
+POST {{baseUrl}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "owner@test.com",
+  "password": "Secret123",
+  "displayName": "Game Shop",
+  "role": "owner"
+}
+
+### Login
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "owner@test.com",
+  "password": "Secret123"
+}
+
+### Refresh Token
+POST {{baseUrl}}/api/auth/refresh
+Content-Type: application/json
+
+{
+  "refreshToken": "{{refreshToken}}"
+}

@@ -1,0 +1,34 @@
+### Get all items for a store (public)
+GET {{baseUrl}}/api/stores/{{storeId}}/items
+
+### Get single item (public)
+GET {{baseUrl}}/api/stores/{{storeId}}/items/{{itemId}}
+
+### Create an item (owner)
+POST {{baseUrl}}/api/stores/{{storeId}}/items
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "title": "Super Mario World",
+  "description": "Complete in box, manual included",
+  "platform": "SNES",
+  "category": "game",
+  "condition": "cib",
+  "price": 49.99,
+  "imageUrls": [],
+  "isPromoted": false
+}
+
+### Update an item (owner)
+PATCH {{baseUrl}}/api/stores/{{storeId}}/items/{{itemId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "isSold": true
+}
+
+### Delete an item (owner)
+DELETE {{baseUrl}}/api/stores/{{storeId}}/items/{{itemId}}
+Authorization: Bearer {{accessToken}}

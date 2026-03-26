@@ -1,0 +1,38 @@
+### Get all stores (public)
+GET {{baseUrl}}/api/stores
+
+### Get my stores (owner)
+GET {{baseUrl}}/api/stores/mine
+Authorization: Bearer {{accessToken}}
+
+### Get store by ID (public)
+GET {{baseUrl}}/api/stores/{{storeId}}
+
+### Create a store (owner)
+POST {{baseUrl}}/api/stores
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "name": "Pixel Vault",
+  "description": "Retro games and consoles",
+  "address": "123 Main St",
+  "city": "Portland",
+  "state": "OR",
+  "zipCode": "97201",
+  "phone": "503-555-0100",
+  "website": "https://pixelvault.example.com"
+}
+
+### Update a store (owner)
+PATCH {{baseUrl}}/api/stores/{{storeId}}
+Content-Type: application/json
+Authorization: Bearer {{accessToken}}
+
+{
+  "description": "Updated — best retro shop in town!"
+}
+
+### Delete a store (owner)
+DELETE {{baseUrl}}/api/stores/{{storeId}}
+Authorization: Bearer {{accessToken}}

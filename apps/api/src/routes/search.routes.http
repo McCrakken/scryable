@@ -1,0 +1,20 @@
+### Search all available items
+GET {{baseUrl}}/api/search
+
+### Search by text query
+GET {{baseUrl}}/api/search?query=mario
+
+### Filter by platform
+GET {{baseUrl}}/api/search?platform=SNES
+
+### Filter by platform + condition
+GET {{baseUrl}}/api/search?platform=SNES&condition=cib
+
+### Price range filter
+GET {{baseUrl}}/api/search?minPrice=10&maxPrice=50
+
+### Full search with pagination
+GET {{baseUrl}}/api/search?query=mario&platform=SNES&condition=cib&minPrice=10&maxPrice=100&page=1&limit=20
+
+### Search within a specific store
+GET {{baseUrl}}/api/search?storeId={{storeId}}&query=zelda

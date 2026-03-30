@@ -1,10 +1,11 @@
-// apps/mobile/components/FilterSheet.tsx
+// apps/mobile/app/components/FilterSheet.tsx
 import { forwardRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import type { Platform, Category, Condition } from '@scryable/shared';
 import { PLATFORMS, CATEGORIES, CONDITIONS } from '@scryable/shared';
+import { ui } from '@/lib/styles';
 
 export interface FilterValues {
   platform?: Platform;
@@ -19,7 +20,6 @@ interface FilterSheetProps {
   onClear: () => void;
 }
 
-// Human-readable labels for enum values
 const CONDITION_LABELS: Record<Condition, string> = {
   sealed: 'Sealed',
   cib: 'Complete in Box',
@@ -49,10 +49,7 @@ export const FilterSheet = forwardRef<BottomSheet, FilterSheetProps>(
     );
 
     const toggle = <T,>(key: keyof FilterValues, value: T, current: T | undefined) => {
-      onChange({
-        ...values,
-        [key]: current === value ? undefined : value,
-      });
+      onChange({ ...values, [key]: current === value ? undefined : value });
     };
 
     return (
@@ -62,29 +59,29 @@ export const FilterSheet = forwardRef<BottomSheet, FilterSheetProps>(
         snapPoints={snapPoints}
         enablePanDownToClose
         backdropComponent={renderBackdrop}
-        backgroundStyle={styles.sheetBackground}
-        handleIndicatorStyle={styles.handleIndicator}
+        backgroundStyle={{ backgroundColor: '#1a1a2e' }}
+        handleIndicatorStyle={{ backgroundColor: '#4a4a6a', width: 40 }}
       >
-        <BottomSheetScrollView contentContainerStyle={styles.content}>
+        <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
           {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.title}>Filters</Text>
+          <View className={ui.sheetHeader}>
+            <Text className={ui.sheetTitle}>Filters</Text>
             <TouchableOpacity onPress={onClear}>
-              <Text style={styles.clearText}>Clear All</Text>
+              <Text className={ui.sheetClear}>Clear All</Text>
             </TouchableOpacity>
           </View>
 
           {/* Platform */}
-          <Text style={styles.sectionLabel}>Platform</Text>
-          <View style={styles.chipGrid}>
+          <Text className={`${ui.label} mt-5 mb-2.5`}>Platform</Text>
+          <View className="flex-row flex-wrap gap-2">
             {PLATFORMS.map((p) => (
               <TouchableOpacity
                 key={p}
-                style={[styles.chip, values.platform === p && styles.chipActive]}
+                className={values.platform === p ? ui.chipActive : ui.chip}
                 onPress={() => toggle('platform', p, values.platform)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.chipText, values.platform === p && styles.chipTextActive]}>
+                <Text className={values.platform === p ? ui.chipTextActive : ui.chipText}>
                   {p}
                 </Text>
               </TouchableOpacity>
@@ -92,16 +89,16 @@ export const FilterSheet = forwardRef<BottomSheet, FilterSheetProps>(
           </View>
 
           {/* Category */}
-          <Text style={styles.sectionLabel}>Category</Text>
-          <View style={styles.chipGrid}>
+          <Text className={`${ui.label} mt-5 mb-2.5`}>Category</Text>
+          <View className="flex-row flex-wrap gap-2">
             {CATEGORIES.map((c) => (
               <TouchableOpacity
                 key={c}
-                style={[styles.chip, values.category === c && styles.chipActive]}
+                className={values.category === c ? ui.chipActive : ui.chip}
                 onPress={() => toggle('category', c, values.category)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.chipText, values.category === c && styles.chipTextActive]}>
+                <Text className={values.category === c ? ui.chipTextActive : ui.chipText}>
                   {CATEGORY_LABELS[c]}
                 </Text>
               </TouchableOpacity>
@@ -109,25 +106,29 @@ export const FilterSheet = forwardRef<BottomSheet, FilterSheetProps>(
           </View>
 
           {/* Condition */}
-          <Text style={styles.sectionLabel}>Condition</Text>
-          <View style={styles.chipGrid}>
+          <Text className={`${ui.label} mt-5 mb-2.5`}>Condition</Text>
+          <View className="flex-row flex-wrap gap-2">
             {CONDITIONS.map((c) => (
               <TouchableOpacity
                 key={c}
-                style={[styles.chip, values.condition === c && styles.chipActive]}
+                className={values.condition === c ? ui.chipActive : ui.chip}
                 onPress={() => toggle('condition', c, values.condition)}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.chipText, values.condition === c && styles.chipTextActive]}>
+                <Text className={values.condition === c ? ui.chipTextActive : ui.chipText}>
                   {CONDITION_LABELS[c]}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
 
-          {/* Apply button */}
-          <TouchableOpacity style={styles.applyButton} onPress={onApply} activeOpacity={0.8}>
-            <Text style={styles.applyButtonText}>Apply Filters</Text>
+          {/* Apply */}
+          <TouchableOpacity
+            className={`${ui.btnPrimary} mt-8`}
+            onPress={onApply}
+            activeOpacity={0.8}
+          >
+            <Text className={ui.btnPrimaryText}>Apply Filters</Text>
           </TouchableOpacity>
         </BottomSheetScrollView>
       </BottomSheet>
@@ -135,80 +136,3 @@ export const FilterSheet = forwardRef<BottomSheet, FilterSheetProps>(
   },
 );
 FilterSheet.displayName = 'FilterSheet';
-
-const styles = StyleSheet.create({
-  sheetBackground: {
-    backgroundColor: '#1a1a2e',
-  },
-  handleIndicator: {
-    backgroundColor: '#4a4a6a',
-    width: 40,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingBottom: 40,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 16,
-  },
-  title: {
-    color: '#e0e0e0',
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  clearText: {
-    color: '#a78bfa',
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  sectionLabel: {
-    color: '#a0a0c0',
-    fontSize: 13,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    marginTop: 20,
-    marginBottom: 10,
-  },
-  chipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  chip: {
-    backgroundColor: '#2a2a4a',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderWidth: 1,
-    borderColor: '#3a3a5a',
-  },
-  chipActive: {
-    backgroundColor: '#7c3aed',
-    borderColor: '#9d5ef5',
-  },
-  chipText: {
-    color: '#c0c0e0',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  chipTextActive: {
-    color: '#fff',
-    fontWeight: '700',
-  },
-  applyButton: {
-    backgroundColor: '#7c3aed',
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 32,
-  },
-  applyButtonText: {
-    color: '#fff',
-    fontSize: 17,
-    fontWeight: '700',
-  },
-});

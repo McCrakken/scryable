@@ -7,13 +7,13 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
-  StyleSheet,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import BottomSheet from '@gorhom/bottom-sheet';
-import type { InventoryItem, SearchParams, Platform, Category, Condition } from '@scryable/shared';
+import type { InventoryItem, SearchParams } from '@scryable/shared';
 import { searchItems } from '@/lib/api';
-import { FilterSheet, type FilterValues } from './components/FilterSheet';
+import { FilterSheet, type FilterValues } from '@/app/components/FilterSheet';
+import { ui } from '@/lib/styles';
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -27,9 +27,7 @@ export default function SearchScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const [query, setQuery] = useState('');
-  // Staged filters are what's shown in the sheet (uncommitted)
   const [stagedFilters, setStagedFilters] = useState<FilterValues>({});
-  // Applied filters are what's actually used in search
   const [appliedFilters, setAppliedFilters] = useState<FilterValues>({});
 
   const fetchItems = useCallback(
@@ -95,7 +93,7 @@ export default function SearchScreen() {
 
   const renderItem = ({ item }: { item: InventoryItem }) => (
     <TouchableOpacity
-      style={styles.card}
+      className={ui.card}
       onPress={() =>
         router.push({
           pathname: '/item/[storeId]/[itemId]',
@@ -103,22 +101,22 @@ export default function SearchScreen() {
         })
       }
     >
-      <Text style={styles.itemTitle}>{item.title}</Text>
-      <View style={styles.metaRow}>
-        <Text style={styles.tag}>{item.platform}</Text>
-        <Text style={styles.tag}>{item.condition}</Text>
-        <Text style={styles.tag}>{item.category}</Text>
+      <Text className={ui.subheading + ' mb-1.5'}>{item.title}</Text>
+      <View className="flex-row gap-2 mb-2">
+        <Text className={ui.tag}>{item.platform}</Text>
+        <Text className={ui.tag}>{item.condition}</Text>
+        <Text className={ui.tag}>{item.category}</Text>
       </View>
-      <Text style={styles.price}>${Number(item.price).toFixed(2)}</Text>
+      <Text className={ui.price}>${Number(item.price).toFixed(2)}</Text>
     </TouchableOpacity>
   );
 
   return (
-    <View style={styles.container}>
-      {/* Search bar + Filter button */}
-      <View style={styles.searchRow}>
+    <View className={ui.screen + ' pt-4'}>
+      {/* Search bar + Filters button */}
+      <View className="flex-row gap-2.5 mb-2.5">
         <TextInput
-          style={styles.searchInput}
+          className={ui.input}
           placeholder="Search games, consoles, accessories…"
           placeholderTextColor="#888"
           value={query}
@@ -127,14 +125,14 @@ export default function SearchScreen() {
           onSubmitEditing={() => handleSearch()}
         />
         <TouchableOpacity
-          style={styles.filterButton}
+          className={ui.btnSecondary}
           onPress={() => {
             setStagedFilters(appliedFilters);
             filterSheetRef.current?.expand();
           }}
           activeOpacity={0.7}
         >
-          <Text style={styles.filterButtonText}>
+          <Text className={ui.btnSecondaryText}>
             {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : 'Filters'}
           </Text>
         </TouchableOpacity>
@@ -142,7 +140,7 @@ export default function SearchScreen() {
 
       {/* Search button */}
       <TouchableOpacity
-        style={[styles.searchButton, loading && styles.searchButtonDisabled]}
+        className={`${ui.btnPrimary} mb-3 ${loading ? ui.btnPrimaryDisabled : ''}`}
         onPress={() => handleSearch()}
         disabled={loading}
         activeOpacity={0.7}
@@ -150,35 +148,26 @@ export default function SearchScreen() {
         {loading && !items.length ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <Text style={styles.searchButtonText}>Search</Text>
+          <Text className={ui.btnPrimaryText}>Search</Text>
         )}
       </TouchableOpacity>
 
       {/* Active filter chips */}
       {activeFilterCount > 0 && (
-        <View style={styles.activeFilterRow}>
+        <View className="flex-row flex-wrap gap-2 mb-3">
           {appliedFilters.platform && (
-            <TouchableOpacity
-              style={styles.activeChip}
-              onPress={() => removeFilter('platform')}
-            >
-              <Text style={styles.activeChipText}>{appliedFilters.platform} ✕</Text>
+            <TouchableOpacity className={ui.activeChip} onPress={() => removeFilter('platform')}>
+              <Text className={ui.activeChipText}>{appliedFilters.platform} ✕</Text>
             </TouchableOpacity>
           )}
           {appliedFilters.category && (
-            <TouchableOpacity
-              style={styles.activeChip}
-              onPress={() => removeFilter('category')}
-            >
-              <Text style={styles.activeChipText}>{appliedFilters.category} ✕</Text>
+            <TouchableOpacity className={ui.activeChip} onPress={() => removeFilter('category')}>
+              <Text className={ui.activeChipText}>{appliedFilters.category} ✕</Text>
             </TouchableOpacity>
           )}
           {appliedFilters.condition && (
-            <TouchableOpacity
-              style={styles.activeChip}
-              onPress={() => removeFilter('condition')}
-            >
-              <Text style={styles.activeChipText}>{appliedFilters.condition} ✕</Text>
+            <TouchableOpacity className={ui.activeChip} onPress={() => removeFilter('condition')}>
+              <Text className={ui.activeChipText}>{appliedFilters.condition} ✕</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -186,10 +175,13 @@ export default function SearchScreen() {
 
       {/* Results / Error / Empty state */}
       {error ? (
-        <View style={styles.errorContainer}>
-          <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={() => handleSearch()} style={styles.retryButton}>
-            <Text style={styles.retryButtonText}>Retry</Text>
+        <View className="items-center mt-10">
+          <Text className={ui.errorText}>{error}</Text>
+          <TouchableOpacity
+            onPress={() => handleSearch()}
+            className="bg-bg-elevated px-6 py-2.5 rounded-lg mt-4"
+          >
+            <Text className="text-text-primary text-sm font-semibold">Retry</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -201,7 +193,7 @@ export default function SearchScreen() {
           onEndReachedThreshold={0.5}
           ListEmptyComponent={
             !loading ? (
-              <Text style={styles.emptyText}>
+              <Text className={`${ui.faint} mt-10`}>
                 {hasSearched
                   ? 'No items found. Try adjusting your filters.'
                   : 'Search for games, consoles, and more.'}
@@ -210,13 +202,12 @@ export default function SearchScreen() {
           }
           ListFooterComponent={
             loading && items.length > 0 ? (
-              <ActivityIndicator size="large" color="#7c3aed" style={styles.listFooter} />
+              <ActivityIndicator size="large" color="#7c3aed" className="my-4" />
             ) : null
           }
         />
       )}
 
-      {/* Filter bottom sheet — rendered last so it overlays content */}
       <FilterSheet
         ref={filterSheetRef}
         values={stagedFilters}
@@ -227,101 +218,3 @@ export default function SearchScreen() {
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f23', padding: 16 },
-  searchRow: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 10,
-  },
-  searchInput: {
-    flex: 1,
-    backgroundColor: '#1a1a2e',
-    color: '#e0e0e0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#2a2a4a',
-  },
-  filterButton: {
-    backgroundColor: '#2a2a4a',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#3a3a5a',
-  },
-  filterButtonText: {
-    color: '#a78bfa',
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  searchButton: {
-    backgroundColor: '#7c3aed',
-    borderRadius: 8,
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  searchButtonDisabled: {
-    opacity: 0.6,
-  },
-  searchButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  activeFilterRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 12,
-  },
-  activeChip: {
-    backgroundColor: '#3d1f7a',
-    borderRadius: 20,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderWidth: 1,
-    borderColor: '#7c3aed',
-  },
-  activeChipText: {
-    color: '#c4a6fa',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  card: {
-    backgroundColor: '#1a1a2e',
-    borderRadius: 10,
-    padding: 16,
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: '#2a2a4a',
-  },
-  itemTitle: { color: '#e0e0e0', fontSize: 17, fontWeight: '600', marginBottom: 6 },
-  metaRow: { flexDirection: 'row', gap: 8, marginBottom: 8 },
-  tag: {
-    backgroundColor: '#2a2a4a',
-    color: '#a78bfa',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 4,
-    fontSize: 12,
-    overflow: 'hidden',
-  },
-  price: { color: '#34d399', fontSize: 18, fontWeight: '700' },
-  emptyText: { color: '#666', textAlign: 'center', marginTop: 40, fontSize: 15 },
-  errorContainer: { alignItems: 'center', marginTop: 40 },
-  errorText: { color: '#ef4444', fontSize: 15, textAlign: 'center', marginBottom: 16 },
-  retryButton: {
-    backgroundColor: '#2a2a4a',
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryButtonText: { color: '#e0e0e0', fontSize: 14, fontWeight: '600' },
-  listFooter: { marginVertical: 16 },
-});

@@ -10,6 +10,7 @@
   "scripts": {
     "api": "yarn workspace @scryable/api dev",
     "web": "yarn workspace @scryable/web dev",
+    "mobile": "yarn workspace @scryable/mobile start",
     "lint": "yarn workspaces foreach --all run lint",
     "typecheck": "yarn workspaces foreach --all run typecheck",
     "test": "yarn workspaces foreach --all run test"

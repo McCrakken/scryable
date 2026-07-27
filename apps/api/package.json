@@ -11,6 +11,7 @@
     "db:generate": "prisma generate",
     "db:seed": "tsx prisma/seed.ts",
     "db:studio": "prisma studio",
+    "db:reset": "prisma migrate reset",
     "test": "echo \"No tests yet\""
   },
   "dependencies": {
@@ -22,7 +23,7 @@
     "@scryable/shared": "workspace:*",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.3.1",
-    "fastify": "^5.8.4",
+    "fastify": "^5.10.0",
     "jsonwebtoken": "^9.0.3",
     "pg": "^8.20.0"
   },

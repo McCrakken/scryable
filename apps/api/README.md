@@ -93,6 +93,16 @@ docker run --name scryable-db \
    npx prisma migrate dev --name init
 ```
 
+* Optionally seed the database if you haven't already done so
+``` bash
+   cd apps/api
+   yarn db:seed
+```
+* Reset the database if you need it fresh
+``` bash
+   cd apps/api
+   yarn db:reset
+```
 4. Start the development server (From the monorepo root):
 ``` bash
 yarn api

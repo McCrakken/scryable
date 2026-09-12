@@ -440,20 +440,327 @@ text
 
 ---
 
-## 7. Security & Cross-Cutting Concerns
+## 7. API Endpoints & Design
 
-| Concern | Implementation Strategy |
-| :--- | :--- |
-| **Authentication** | Stateless JWT tokens containing user identity, store associations, and roles (`owner` / `user`). Refresh tokens for extended sessions. |
-| **Authorization** | Route-level pre-handlers enforcing store ownership checks before executing catalog updates (`PUT`/`PATCH`/`DELETE`). |
-| **Input Validation** | Strict Zod parsing on API request payloads; shared schemas safeguard client forms before submission. |
-| **Network & Transport** | Security headers through Helmet, strict CORS origins, IP-keyed rate limiting to mitigate denial-of-service and brute-force scans. |
-| **Observability** | Pino logger configured with pretty-printing in development and structured JSON output for production environments, tracing incoming requests with distinct request IDs. |
-| **Resilience & Lifecycle** | Graceful shutdown hooks handling `SIGTERM` and `SIGINT` to drain in-flight Fastify requests and disconnect Prisma database pools safely. |
+Below is the API Endpoints Specification for the Scryable platform. It outlines the endpoints currently implemented in the workspace, detailing the expected payloads, responses, and potential errors, followed by a section outlining planned endpoints required by the system specification.
+
+## _Implemented Endpoints_
+
+### System & Health
+
+#### `GET /health`
+* **Description:** Used to check the health and uptime of the API.
+* **Request:** None
+* **Success Response (200 OK):**
+```json
+{
+    "status": "ok",
+    "timestamp": "2024-05-15T12:00:00.000Z"
+  }
+```
+
+* **Error Responses:** None standard (500 on server failure).
+
+### Authentication
+*All Auth endpoints have strict rate limits to prevent brute-force attacks.*
+
+#### `POST /api/auth/register`
+* **Description:** Registers a new user account (e.g., store owner or standard user).
+* **Request Body (JSON):**
+```json
+{
+    "email": "owner@test.com",
+    "password": "SecretPassword123!",
+    "displayName": "Game Shop",
+    "role": "owner"
+  }
+```
+
+* **Success Response (201 Created):**
+```json
+{
+    "user": {
+      "id": "uuid-1234",
+      "email": "owner@test.com",
+      "displayName": "Game Shop",
+      "role": "owner",
+      "createdAt": "...",
+      "updatedAt": "..."
+    },
+    "accessToken": "jwt_token_string",
+    "refreshToken": "jwt_refresh_token_string"
+  }
+```
+
+* **Error Responses:**
+  * `400 Bad Request`: Validation failed (e.g., invalid email).
+  * `409 Conflict`: A record with this value (email) already exists.
+  * `429 Too Many Requests`: Rate limit exceeded (5 attempts / 15 mins).
+
+#### `POST /api/auth/login`
+* **Description:** Authenticates a user and provisions session tokens.
+* **Request Body (JSON):**
+```json
+{
+    "email": "owner@test.com",
+    "password": "SecretPassword123!"
+  }
+```
+
+* **Success Response (200 OK):** *(Same as Register)*
+* **Error Responses:**
+  * `400 Bad Request`: Validation failed.
+  * `401 Unauthorized`: Invalid email or password.
+  * `429 Too Many Requests`: Rate limit exceeded (10 attempts / 15 mins).
+
+#### `POST /api/auth/refresh`
+* **Description:** Refreshes an expired access token using a valid refresh token.
+* **Request Body (JSON):**
+```json
+{
+    "refreshToken": "jwt_refresh_token_string"
+  }
+```
+
+* **Success Response (200 OK):**
+```json
+{
+    "accessToken": "new_jwt_token_string",
+    "refreshToken": "new_jwt_refresh_token_string"
+  }
+```
+
+* **Error Responses:**
+  * `401 Unauthorized`: Invalid or expired refresh token.
+
+### Stores
+
+#### `GET /api/stores`
+* **Description:** Retrieves a list of all stores globally. Public endpoint.
+* **Success Response (200 OK):** Returns an array of Store objects.
+
+#### `GET /api/stores/mine`
+* **Description:** Retrieves stores owned by the currently authenticated user.
+* **Headers:** `Authorization: Bearer <token>`
+* **Success Response (200 OK):** Returns an array of Store objects belonging to the user.
+* **Error Responses:** `401 Unauthorized`
+
+#### `GET /api/stores/:id`
+* **Description:** Retrieves details for a specific store.
+* **Success Response (200 OK):** Returns a Store object.
+* **Error Responses:** `404 Not Found`
+
+#### `POST /api/stores`
+* **Description:** Creates a new store. Owner access required.
+* **Headers:** `Authorization: Bearer <token>`
+* **Request Body (JSON):**
+```json
+{
+    "name": "Pixel Vault",
+    "description": "Retro games and consoles",
+    "address": "123 Main St",
+    "city": "Portland",
+    "state": "OR",
+    "zipCode": "97201",
+    "phone": "503-555-0100",
+    "website": "https://pixelvault.example.com"
+  }
+```
+
+* **Success Response (201 Created):** Returns the created Store object.
+* **Error Responses:** `400 Bad Request`, `401 Unauthorized`, `403 Forbidden` (If not an owner).
+
+#### `PATCH /api/stores/:id`
+* **Description:** Updates a store's profile. Caller must own the store.
+* **Headers:** `Authorization: Bearer <token>`
+* **Request Body:** Partial store object (e.g., just `description`).
+* **Success Response (200 OK):** Returns the updated Store object.
+* **Error Responses:** `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
+
+#### `DELETE /api/stores/:id`
+* **Description:** Deletes a store and cascades to delete all its inventory.
+* **Headers:** `Authorization: Bearer <token>`
+* **Success Response (204 No Content):** Empty body.
+* **Error Responses:** `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
+
+### Inventory Items
+
+#### `GET /api/stores/:storeId/items`
+* **Description:** Retrieves all active inventory items for a specific store.
+* **Success Response (200 OK):** Array of InventoryItem objects.
+
+#### `GET /api/stores/:storeId/items/:id`
+* **Description:** Retrieves a specific inventory item.
+* **Success Response (200 OK):** InventoryItem object.
+* **Error Responses:** `404 Not Found`.
+
+#### `POST /api/stores/:storeId/items`
+* **Description:** Adds a new item to a store's inventory.
+* **Headers:** `Authorization: Bearer <token>`
+* **Request Body (JSON):**
+```json
+{
+    "title": "Super Mario World",
+    "description": "Complete in box",
+    "platform": "SNES",
+    "category": "game",
+    "condition": "cib",
+    "price": 49.99,
+    "imageUrls": ["https://..."],
+    "isPromoted": false
+  }
+```
+
+* **Success Response (201 Created):** Returns the created InventoryItem.
+* **Error Responses:** `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
+
+#### `PATCH /api/stores/:storeId/items/:id`
+* **Description:** Updates an inventory item (e.g., mark as sold).
+* **Headers:** `Authorization: Bearer <token>`
+* **Request Body (JSON):** Partial item schema, additionally accepting `"isSold": true`.
+* **Success Response (200 OK):** Returns the updated InventoryItem.
+* **Error Responses:** `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
+
+#### `DELETE /api/stores/:storeId/items/:id`
+* **Description:** Permanently removes an item from the store.
+* **Headers:** `Authorization: Bearer <token>`
+* **Success Response (204 No Content):** Empty body.
+* **Error Responses:** `401 Unauthorized`, `403 Forbidden`, `404 Not Found`.
+
+### Global Search
+
+#### `GET /api/search`
+* **Description:** Searches and filters active (unsold) inventory platform-wide.
+* **Query Parameters:** `query` (string), `platform` (enum), `category` (enum), `condition` (enum), `minPrice` (num), `maxPrice` (num), `storeId` (uuid), `page` (num, default: 1), `limit` (num, default: 20).
+* **Success Response (200 OK):**
+```json
+{
+    "data": [
+      { "id": "...", "title": "Super Mario", "price": 49.99, "store": { "name": "Pixel Vault" } }
+    ],
+    "total": 1,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1
+  }
+```
+
+* **Error Responses:** `400 Bad Request` (Invalid query parameters).
 
 ---
 
-## 8. Monorepo Quality & Lifecycle Workflows
+## _Planned Endpoints (To-Be-Implemented)_
+
+The following functionality requires API endpoints to be developed:
+
+### Hold Requests (User & Merchant Portal)
+* **`POST /api/items/:itemId/holds`**: Submit a new hold request for an item (requires standard `user` auth).
+* **`GET /api/holds/mine`**: Retrieve active holds placed by the authenticated user.
+* **`GET /api/stores/:storeId/holds`**: Retrieve pending hold requests for a store (requires `owner`/`staff` auth).
+* **`PATCH /api/stores/:storeId/holds/:holdId`**: Accept or decline a hold request (updates status to `ACCEPTED` or `DECLINED`).
+
+### Wishlists & Personal Library (User Portal)
+* **`POST /api/users/me/wishlist`**: Add a new parameter set (e.g., target title, platform, max price) to the user's wishlist for alerts.
+* **`GET /api/users/me/wishlist`**: Retrieve current wishlist configurations.
+* **`DELETE /api/users/me/wishlist/:id`**: Remove an item from the wishlist.
+* **`GET /api/users/me/library`** and **`POST /api/users/me/library`**: Manage digital representations of personal physical collections.
+
+### Store Trust & Reviews
+* **`POST /api/stores/:storeId/reviews`**: Submit a 1-5 star review and comment for a verified store (requires `user` auth).
+* **`GET /api/stores/:storeId/reviews`**: Paginated list of store reviews.
+
+### Advanced Store Management (Merchant Portal)
+* **`POST /api/stores/:storeId/inventory/bulk`**: Upload a CSV or Excel file to perform bulk insertion/updates of inventory.
+* **`POST /api/utils/parse-image`**: Upload an image to an AI integration layer to automatically suggest item title, platform, and condition.
+* **`GET /api/utils/market-price`**: Fetch market pricing suggestions (e.g., PriceCharting proxy) based on a UPC/barcode or Title+Platform.
+* **`POST /api/webhooks/pos`**: Dedicated authenticated route to ingest Point-of-Sale events to automatically flag items as `isSold: true`.
+
+### Moderation & Administration (Super Admin)
+* **`GET /api/admin/reports`**: Fetch user-submitted reports for counterfeit items or fraudulent stores.
+* **`PATCH /api/admin/stores/:storeId/verify`**: Manually toggle a store's `isVerified` status to grant them the verified badge.
+* **`PATCH /api/admin/users/:userId/suspend`**: Suspend malicious users or scam accounts.
+
+---
+
+## 8. Backend Architecture: Services & Data Access
+
+To ensure a clean separation of concerns, high maintainability, and strict end-to-end type safety, the API (`apps/api`) employs a layered architecture that decouples HTTP transport from business logic and database interactions.
+
+### 8.1 Transport Layer (Fastify Routes)
+The route handlers (`src/routes`) act strictly as the transport layer. Fastify is responsible for HTTP context, intercepting incoming payloads, enforcing middleware rules (like authentication), and validating inputs against shared Zod schemas. Once validated, Fastify delegates the clean, typed data to the service layer.
+
+### 8.2 Business Logic Layer (Services)
+All core domain logic resides in isolated service modules (e.g., `src/services/item.service.ts`, `src/services/store.service.ts`).
+* **HTTP-Agnostic:** Services are entirely unaware of Fastify requests or HTTP headers. They accept pure TypeScript arguments, keeping the domain logic decoupled and highly testable.
+* **Domain Rules Verification:** This layer enforces business rules before interacting with the database. For example, before deleting an inventory item or updating a store, the service verifies that the requesting user actually has ownership rights over that resource.
+* **Data Orchestration:** Services manage complex data requirements, such as running parallel database queries (`Promise.all`) to optimize response times for search and pagination.
+
+### 8.3 Data Access Layer (Prisma ORM)
+Database interactions are abstracted and handled exclusively by **Prisma ORM** (`lib/prisma.ts`).
+* **Tool Integration:** The API uses a proxy singleton pattern to instantiate a single `PrismaClient`. This efficiently manages the PostgreSQL connection pool across all service executions, preventing database connection exhaustion.
+* **Primary Benefit:** Prisma provides completely type-safe database queries. The objects returned from the database are guaranteed by the TypeScript compiler to match the shared domain contracts expected by the application, eliminating runtime errors caused by mismatched data shapes.
+
+---
+
+## 9. Frontend Architecture: Feature-Based Modules
+
+To ensure maintainability, scalability, and strict separation of concerns across the presentation layers, both the mobile (`apps/mobile`) and web (`apps/web`) clients utilize a **Feature-Based Directory Structure**. Rather than grouping files by technical type (e.g., placing all hooks in one folder and all components in another), the codebase is organized by business domains (features).
+
+### 9.1 Feature-Based Directory Layout
+Each client application follows a standardized layout where core routing and global components live at the root, while business logic is encapsulated within specific feature directories.
+```text
+src/
+├── app/                  # Application entry points and routing configurations
+├── components/           # Global, domain-agnostic UI components (e.g., Buttons, Inputs)
+├── lib/                  # Generic utilities, formatters, and API client wrappers
+└── features/             # Isolated business domain modules
+    ├── admin/            # Platform moderation and store verification tools
+    ├── auth/             # Identity, session, and role management
+    ├── collections/      # Personal library and wishlist management
+    ├── holds/            # Item reservation workflows
+    ├── inventory/        # Merchant tools for catalog management
+    ├── search/           # Global catalog discovery and filtering
+    ├── social/           # P2P trading and community features
+    └── stores/           # Storefront profiles and trust reviews
+```
+Within each feature directory, all necessary domain-specific code is co-located:
+*   `api/`: Data-fetching logic (e.g., TanStack Query hooks, Fastify endpoint wrappers).
+*   `components/`: UI components exclusively used by this feature.
+*   `hooks/`: React hooks encapsulating the feature's specific business logic.
+*   `stores/`: Local state management (e.g., Zustand or context) specific to the feature.
+
+### 9.2 Benefits of Feature Isolation
+*   **Clear Boundaries:** Developers can modify the `search` feature (e.g., updating the barcode scanner) without risking side effects in the `inventory` management feature.
+*   **Backend Alignment:** The frontend feature folders directly mirror the API route structures in `apps/api`, establishing a unified mental model across the full stack.
+*   **Access Control Mapping:** Features often map directly to user roles. The `inventory` and `admin` modules are naturally gated for Store Owners and Admins, making route protection straightforward.
+
+### 9.3 Routing Strategy
+Routing across both clients acts as a "thin shell" layer. The routing files are responsible solely for capturing URL parameters and rendering the appropriate feature components, keeping the routing layer clean of heavy business logic.
+*   **Mobile (Expo Router):** Uses file-based routing within the `apps/mobile/app/` directory. For example, the file `app/search.tsx` simply imports and renders the `<DiscoveryFeed />` and `<FilterSheet />` components from `@/features/search/components`.
+*   **Web (React Router v7):** Runs in framework mode using `apps/web/app/routes/`. The route modules handle data loading (loaders/actions) by delegating to the `api/` handlers within the respective feature folder, and then render the feature's primary view component.
+
+### 9.4 Consistent Styling & UI Design System
+To achieve visual parity between the mobile app and the web portal, the monorepo utilizes a shared Tailwind CSS design system approach.
+*   **Web Client UI:** Built with **Tailwind CSS** and **Shadcn UI**. This provides highly accessible, copy-pasteable components that form the foundation of the Merchant and User portals.
+*   **Mobile Client UI:** Built with **NativeWind** (Tailwind CSS tailored for React Native) and **React Native Reusables** (a mobile component library modeled directly after Shadcn UI).
+*   **The Benefit:** Both clients use identical Tailwind utility classes (e.g., `flex-row items-center bg-bg-elevated`). By sharing configuration tokens (like colors, spacing, and typography) across the monorepo, a developer can build a UI element on the web and confidently implement its twin on mobile with a nearly identical developer experience and guaranteed brand consistency.
+
+---
+
+## 10. Security & Cross-Cutting Concerns
+
+| Concern | Implementation Strategy |
+| :--- | :--- |
+| **Authentication** | Powered by **Better Auth** for secure, database-backed or stateless session management. Supports multi-provider OAuth logins, passwordless Magic Links, and standard credentials. |
+| **Authorization** | Strict Role-Based Access Control (RBAC) via Better Auth, distinguishing between Super Admins, Owners, Staff, and Users. Service-level domain rule checks enforce strict ownership rights for store catalog mutations. |
+| **Input Validation** | Strict Zod parsing on API request payloads; unified schemas residing in `@scryable/shared` safeguard both client form submissions and API boundaries. |
+| **Network & Transport** | Enforced HTTP headers via `@fastify/helmet` (CSP, HSTS). IP-keyed `@fastify/rate-limit` applies global throttling (e.g., 100 req/min) and strict limits on sensitive endpoints (e.g., 4-10 req/15 mins for auth) to prevent brute-forcing. |
+| **Observability** | Pino logger configured with pretty-printing in development and structured JSON output for production. Requests are tagged with unique correlation IDs (`x-request-id` or UUID) propagating through logs for simplified debugging. |
+| **Resilience & Lifecycle** | Server-side graceful shutdown hooks intercept `SIGTERM`/`SIGINT` to drain Fastify requests and safely disconnect Prisma pools. Client-side resilience, offline caching, and automatic network retries are handled by TanStack React Query. |
+
+---
+
+## 11. Monorepo Quality & Lifecycle Workflows
 
 The monorepo provides root-level coordination across packages and applications:
 
@@ -468,13 +775,19 @@ The monorepo provides root-level coordination across packages and applications:
 
 ---
 
-## 9. Architecture Recommendations & Roadmap
+## 12. Architecture Recommendations & Roadmap
 
 1. **Full-Text Search Enhancement:**  
-   The current search relies on SQL `ILIKE`/`contains: query, mode: 'insensitive'` on `title` and `description`. For larger catalogs, migrate to PostgreSQL full-text search (`tsvector` + GIN indexes) as outlined in `apps/api/prisma/full-text-search.sql`.
+The current search relies on SQL `ILIKE`/`contains: query, mode: 'insensitive'` on `title` and `description`. For larger catalogs, complete the migration to PostgreSQL full-text search (`tsvector` + GIN indexes) as outlined in the database design.
 2. **Web Merchant Dashboard (`apps/web`):**  
-   Implement a responsive web portal (Next.js or Vite/React) consuming `@scryable/shared` to allow shop owners to manage inventory via desktop barcode/catalog entry.
-3. **Geo-Location Search:**  
-   Add latitude/longitude coordinates to the `Store` model to enable "Stores near me" radius search in the mobile app.
-4. **Caching Layer:**  
-   Introduce Redis for caching common catalog lookups (e.g., active platform and category aggregates) and search queries on high-traffic days.
+Flesh out the responsive web portal using **React Router v7 (framework mode)** and **Shadcn UI** to allow shop owners to manage inventory via desktop, process bulk CSV uploads, and review analytics.
+3. **Geo-Location Search & Radius Queries:**  
+   The `Store` schema already supports `latitude` and `longitude`. The next step is to implement PostGIS or standard bounding-box radius queries in the Fastify API to power the "Stores near me" local discovery feed on the mobile client.
+4. **AI Parsing & Pricing Integrations:**  
+   Develop the planned API utilities (`/api/utils/parse-image` and `/api/utils/market-price`) integrating third-party AI vision models and market aggregators (like PriceCharting) to streamline item entry for merchants.
+5. **Hold Requests & Wishlists Engine:**  
+   Implement the planned API endpoints for inventory reservations (Holds) and create a background worker or database trigger system to dispatch notifications when new inventory matches user Wishlist parameters.
+6. **POS Webhook Synchronization:**  
+   Build out secure, authenticated ingestion routes (`/api/webhooks/pos`) to allow brick-and-mortar stores to sync physical sales with the digital platform in real-time.
+7. **Caching Layer:**  
+   Introduce Redis for caching common catalog lookups (e.g., active platform and category aggregates) and global search queries to reduce PostgreSQL load during high-traffic periods.

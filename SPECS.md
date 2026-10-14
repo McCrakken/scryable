@@ -267,14 +267,19 @@ Cross-platform native mobile application targeting retro game enthusiasts.
 - **Data Integration:** Typed HTTP client (`lib/api.ts`) leveraging types directly from `@scryable/shared`.
 
 #### Core User Flows & UI Modules
-1. **Browse & Search:**
+0. **Home (`app/index.tsx`):**
+   - Prominent search input that opens the Search screen with the query (or "Browse all inventory").
+   - "Manage Inventory" section for store owners and staff, linking to Inventory Intake (the only store tool so far). Until sign-in exists, staff pick their store from the public store list; with Better Auth this becomes `GET /api/stores/mine`.
+1. **Browse & Search (`app/search.tsx`):**
    - Live query input with triggerable search action.
    - Paginated infinite scroll via `FlatList` with optimistic UI feedback (skeletons/spinners) driven by React Query.
 2. **Filter Drawer:**
    - Modal bottom sheet driven by `@gorhom/bottom-sheet`.
    - Filter taxonomy selection for Platform, Category, and Condition.
 3. **Store & Item Details:**
-   - Seamless deep-linking to specific items or stores, facilitating hold requests and local store discovery.
+   - Item detail (`app/item/[storeId]/[itemId].tsx`): photos, price, platform/category/condition, description, a "Sold by" link to the store, and a disabled "Place hold" placeholder until the Hold Requests API ships.
+   - Store info (`app/store/[storeId]/index.tsx`): description, tappable address/phone/website, and the store's unsold inventory.
+   - Deep links use the app's custom scheme today: `scryable://item/<storeId>/<itemId>` and `scryable://store/<storeId>`. Universal links (iOS) / App Links (Android) are deferred until the project has a web domain to host the association files.
 4. **Inventory Intake (Store Staff, `app/store/[storeId]/inventory/add.tsx`):**
    - Camera permission flow, then a full-screen `expo-camera` capture view.
    - Photo review step: staff retake the picture or confirm it before anything is uploaded.

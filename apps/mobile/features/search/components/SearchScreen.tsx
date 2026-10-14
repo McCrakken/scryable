@@ -1,7 +1,7 @@
 // apps/mobile/features/search/components/SearchScreen.tsx
 import { useMemo, useRef, useState } from 'react';
 import { View, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import type { BottomSheetModal } from '@gorhom/bottom-sheet';
 import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { hashKey } from '@tanstack/react-query';
@@ -14,7 +14,7 @@ import { Text } from '@/components/ui/text';
 import { THEME } from '@/lib/theme';
 import { useSearchItems, type SearchFilters } from '../api';
 import { FilterSheet, type FilterValues } from './FilterSheet';
-import { ItemCard, ItemCardSkeleton } from './ItemCard';
+import { ItemCard, ItemCardSkeleton } from '@/components/ItemCard';
 
 const FILTER_KEYS = ['platform', 'category', 'condition'] as const;
 const SKELETON_COUNT = 4;
@@ -28,11 +28,15 @@ export function SearchScreen() {
   const router = useRouter();
   const filterSheetRef = useRef<BottomSheetModal>(null);
 
-  const [query, setQuery] = useState('');
+  // Arriving from the home screen: `q` runs that search, `all` browses everything.
+  const params = useLocalSearchParams<{ q?: string; all?: string }>();
+  const [query, setQuery] = useState(params.q ?? '');
   const [stagedFilters, setStagedFilters] = useState<FilterValues>({});
   const [appliedFilters, setAppliedFilters] = useState<FilterValues>({});
   // The search that was actually submitted; null until the first search so nothing is fetched up front.
-  const [submitted, setSubmitted] = useState<SearchFilters | null>(null);
+  const [submitted, setSubmitted] = useState<SearchFilters | null>(() =>
+    params.q ? toSearchFilters(params.q, {}) : params.all ? {} : null,
+  );
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
 
   const {
@@ -106,6 +110,7 @@ export function SearchScreen() {
           onChangeText={setQuery}
           returnKeyType="search"
           onSubmitEditing={() => handleSearch()}
+          autoFocus={!params.q && !params.all}
         />
         <Button
           variant="secondary"

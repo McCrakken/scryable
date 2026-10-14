@@ -1,4 +1,4 @@
-// apps/mobile/features/search/components/ItemCard.tsx
+// apps/mobile/components/ItemCard.tsx
 import { Pressable, View } from 'react-native';
 import type { InventoryItem } from '@scryable/shared';
 import { Badge } from '@/components/ui/badge';

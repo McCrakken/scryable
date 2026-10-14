@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { CATEGORY_LABELS, CONDITION_LABELS } from '@/lib/labels';
-import { THEME } from '@/lib/theme';
+import { useThemeColors } from '@/lib/theme';
 
 export interface FilterValues {
   platform?: Platform;
@@ -69,6 +69,7 @@ function FilterGroup<T extends string>({
 
 export const FilterSheet = forwardRef<BottomSheetModal, FilterSheetProps>(
   ({ values, onChange, onApply, onClear }, ref) => {
+    const theme = useThemeColors();
     const snapPoints = useMemo(() => ['60%', '90%'], []);
 
     const renderBackdrop = useCallback(
@@ -91,8 +92,8 @@ export const FilterSheet = forwardRef<BottomSheetModal, FilterSheetProps>(
         enableDynamicSizing={false}
         enablePanDownToClose
         backdropComponent={renderBackdrop}
-        backgroundStyle={{ backgroundColor: THEME.card }}
-        handleIndicatorStyle={{ backgroundColor: THEME.input, width: 40 }}
+        backgroundStyle={{ backgroundColor: theme.card }}
+        handleIndicatorStyle={{ backgroundColor: theme.input, width: 40 }}
       >
         <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
           {/* Header */}

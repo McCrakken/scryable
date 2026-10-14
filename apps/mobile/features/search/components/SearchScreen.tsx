@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { Text } from '@/components/ui/text';
-import { THEME } from '@/lib/theme';
+import { useThemeColors } from '@/lib/theme';
 import { useSearchItems, type SearchFilters } from '../api';
 import { FilterSheet, type FilterValues } from './FilterSheet';
 import { ItemCard, ItemCardSkeleton } from '@/components/ItemCard';
@@ -26,6 +26,7 @@ function toSearchFilters(query: string, filters: FilterValues): SearchFilters {
 
 export function SearchScreen() {
   const router = useRouter();
+  const theme = useThemeColors();
   const filterSheetRef = useRef<BottomSheetModal>(null);
 
   // Arriving from the home screen: `q` runs that search, `all` browses everything.
@@ -130,7 +131,7 @@ export function SearchScreen() {
       {/* Search button */}
       <Button size="lg" className="mb-3 h-12" onPress={() => handleSearch()} disabled={isSearching}>
         {isSearching ? (
-          <ActivityIndicator size="small" color={THEME.primaryForeground} />
+          <ActivityIndicator size="small" color={theme.primaryForeground} />
         ) : (
           <Text className="text-base font-bold">Search</Text>
         )}
@@ -206,7 +207,7 @@ export function SearchScreen() {
               <RefreshControl
                 refreshing={isPullRefreshing}
                 onRefresh={handlePullRefresh}
-                tintColor={THEME.primary}
+                tintColor={theme.primary}
               />
             ) : undefined
           }
@@ -227,7 +228,7 @@ export function SearchScreen() {
           }
           ListFooterComponent={
             isFetchingNextPage ? (
-              <ActivityIndicator size="large" color={THEME.primary} className="my-4" />
+              <ActivityIndicator size="large" color={theme.primary} className="my-4" />
             ) : error && items.length > 0 ? (
               <Button variant="ghost" className="my-4" onPress={() => fetchNextPage()}>
                 <Text className="text-destructive">

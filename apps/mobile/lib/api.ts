@@ -4,6 +4,7 @@ import type {
   PaginatedResponse,
   InventoryItem,
   Store,
+  IdentifyItemsResponse,
 } from '@scryable/shared';
 
 // In development, use your machine's LAN IP so the phone/emulator can reach it.
@@ -64,4 +65,51 @@ export function getStore(id: string, signal?: AbortSignal) {
 
 export function getItem(storeId: string, itemId: string, signal?: AbortSignal) {
   return request<InventoryItem>(`/api/stores/${storeId}/items/${itemId}`, { signal });
+}
+
+// ── Inventory Intake (owner / staff) ─────────────────────────────
+
+const STUB_LATENCY_MS = 1500;
+
+const STUB_IDENTIFIED_ITEMS: IdentifyItemsResponse = {
+  items: [
+    {
+      title: 'Super Mario World',
+      description: 'Cartridge, box and manual. Light shelf wear on the box.',
+      platform: 'SNES',
+      category: 'game',
+      condition: 'cib',
+      price: 89.99,
+      imageUrls: [],
+    },
+    {
+      title: 'Nintendo 64 Console',
+      description: 'Charcoal grey console with one controller.',
+      platform: 'N64',
+      category: 'console',
+      condition: 'loose',
+      price: 109.99,
+      imageUrls: [],
+    },
+  ],
+};
+
+/**
+ * STUB: AI image search for inventory intake (SPECS §7, planned endpoint).
+ * The API doesn't implement `POST /api/stores/:storeId/inventory/identify` yet, so this resolves
+ * with sample items after a short delay. When it ships, replace the body with a multipart upload
+ * of the photo (field `image`) to that endpoint; callers won't need to change.
+ */
+export function identifyItems(
+  storeId: string,
+  photoUri: string,
+  signal?: AbortSignal,
+): Promise<IdentifyItemsResponse> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => resolve(STUB_IDENTIFIED_ITEMS), STUB_LATENCY_MS);
+    signal?.addEventListener('abort', () => {
+      clearTimeout(timer);
+      reject(signal.reason);
+    });
+  });
 }

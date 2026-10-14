@@ -25,6 +25,7 @@
     "clsx": "^2.1.1",
     "expo": "~57.0.29",
     "expo-build-properties": "~57.0.22",
+    "expo-camera": "~57.0.6",
     "expo-constants": "~57.0.22",
     "expo-linking": "~57.0.13",
     "expo-router": "~57.0.27",

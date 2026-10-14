@@ -1,7 +1,7 @@
 // apps/mobile/features/inventory/api/index.ts
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { InventoryItem } from '@scryable/shared';
-import { getItem } from '@/lib/api';
+import { getItem, identifyItems } from '@/lib/api';
 import { findCachedSearchItem } from '@/features/search/api';
 
 export const itemKeys = {
@@ -16,5 +16,12 @@ export function useItem(storeId: string, itemId: string) {
     queryKey: itemKeys.detail(storeId, itemId),
     queryFn: ({ signal }) => getItem(storeId, itemId, signal),
     placeholderData: () => findCachedSearchItem(queryClient, itemId),
+  });
+}
+
+/** Sends a confirmed photo to the AI image search; resolves with every item it recognised. */
+export function useIdentifyItems(storeId: string) {
+  return useMutation({
+    mutationFn: (photoUri: string) => identifyItems(storeId, photoUri),
   });
 }

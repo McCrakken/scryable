@@ -1,17 +1,14 @@
 // apps/mobile/features/search/components/FilterSheet.tsx
 import { forwardRef, useCallback, useMemo } from 'react';
 import { View } from 'react-native';
-import {
-  BottomSheetModal,
-  BottomSheetScrollView,
-  BottomSheetBackdrop,
-} from '@gorhom/bottom-sheet';
+import { BottomSheetModal, BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import type { Platform, Category, Condition } from '@scryable/shared';
 import { PLATFORMS, CATEGORIES, CONDITIONS } from '@scryable/shared';
 import { Button } from '@/components/ui/button';
 import { Text } from '@/components/ui/text';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { CATEGORY_LABELS, CONDITION_LABELS } from '@/lib/labels';
 import { THEME } from '@/lib/theme';
 
 export interface FilterValues {
@@ -26,23 +23,6 @@ interface FilterSheetProps {
   onApply: () => void;
   onClear: () => void;
 }
-
-const CONDITION_LABELS: Record<Condition, string> = {
-  sealed: 'Sealed',
-  cib: 'Complete in Box',
-  loose: 'Loose',
-  fair: 'Fair',
-  poor: 'Poor',
-};
-
-const CATEGORY_LABELS: Record<Category, string> = {
-  game: 'Game',
-  console: 'Console',
-  accessory: 'Accessory',
-  'strategy-guide': 'Strategy Guide',
-  merchandise: 'Merchandise',
-  other: 'Other',
-};
 
 interface FilterGroupProps<T extends string> {
   label: string;

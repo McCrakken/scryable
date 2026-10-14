@@ -129,6 +129,22 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+// === AI Item Identification ===
+
+/**
+ * An item the AI image search recognised in a photo, with the catalog fields the database
+ * holds for an inventory item. Staff review and edit these before they become a CreateItemDto.
+ */
+export type IdentifiedItem = Pick<
+  InventoryItem,
+  'title' | 'description' | 'platform' | 'category' | 'condition' | 'price' | 'imageUrls'
+>;
+
+/** Response of `POST /api/stores/:storeId/inventory/identify`. */
+export interface IdentifyItemsResponse {
+  items: IdentifiedItem[];
+}
+
 // === Auth ===
 
 export interface LoginDto {

@@ -33,6 +33,15 @@
         }
       ],
       [
+        "expo-camera",
+        {
+          "cameraPermission": "Scryable uses the camera to photograph items so they can be identified and added to your store's inventory.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",

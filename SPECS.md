@@ -16,11 +16,11 @@ The platform serves three primary audiences—Store Owners, Registered Collector
 
 **For Store Owners & Staff (Merchant Portal):**
   -   **Streamlined Inventory Management:** Manage storefront profiles and active inventory catalogs with support for bulk uploads and Point of Sale (POS) webhook synchronization.
-  -   **AI & Market Intelligence:** Utilize AI-assisted image parsing to auto-fill item details (platform, condition) and access integrated market pricing suggestions (e.g., PriceCharting).
+  -   **AI Image Search & Market Intelligence:** Photograph incoming stock with the mobile app; an AI image search identifies every item in the picture and returns its catalog details (title, platform, category, condition, price) for staff to review, edit, and verify before it is added to inventory. Integrated market pricing suggestions (e.g., PriceCharting) inform the proposed prices.
   -   **Customer Engagement:** Receive and manage digital "Hold Requests" for in-store pickup and promote rare items to the top of local discovery feeds.
 
 **For Collectors & Shoppers (Mobile & Web Clients):**
-  -   **Advanced Search & Discovery:** Search a global catalog with typo-tolerant full-text search, utilize mobile barcode scanning, and filter by platform, category, and condition.
+  -   **Advanced Search & Discovery:** Search a global catalog with typo-tolerant full-text search and filter by platform, category, and condition.
   -   **Location-Based Hunting:** Discover nearby verified stores and browse their active public inventory.
   -   **Wishlists & Alerts:** Maintain personal wishlists and receive automated push/email notifications when sought-after items hit the shelves of favorited or local stores.
   -   **Social & P2P Trading:** Digitize personal collections, share them with a network of trusted friends, and initiate peer-to-peer trade inquiries backed by a community reputation system.
@@ -116,9 +116,11 @@ These features are gated behind authentication and authorized only for users des
 * **Core Inventory Management:**
   * **CRUD Operations:** Store managers must be able to add, update, and remove items from their active inventory.
   * **Promotions:** Managers can flag specific high-value or rare items as "Promoted" to increase their visibility in search results and local feeds.
-* **AI-Assisted Item Discovery:**
-  * Managers can upload images of items (e.g., game cartridges, consoles).
-  * The system will use AI analysis to automatically parse the image and populate item details (e.g., title, platform, condition, category).
+* **AI Image Search for Inventory Intake:**
+  * Store staff photograph one or more items (e.g., game cartridges, consoles, accessories) with the mobile app's camera and confirm the photo is usable (retaking it if needed) before it is sent.
+  * The API runs an AI image search over the photo and returns an array of every item it identifies, each carrying the catalog fields stored for an inventory item (title, description, platform, category, condition, price, image URLs).
+  * Staff review the returned items, correct any field, discard false matches, and explicitly verify each item. Only verified items are submitted, and each is validated against the shared `createItemSchema` before it is written to the store's inventory.
+  * Access is restricted to users who manage the store's inventory (the store's `owner` and `staff`) and platform `admin`s.
 * **Pricing Intelligence:**
   * During item creation or updating, the system will fetch and display pricing suggestions using integrations from trusted sources like pricecharting.com based on the identified item and its condition.
 * **Hold Management:**
@@ -137,7 +139,6 @@ Registered users have profiles and access to personalized tracking, social featu
 * **Search & Discovery:**
   * **Global & Filtered Search:** Users can search the entire platform's inventory and filter by category, platform, condition, and distance.
   * **Fuzzy/Typo-Tolerant Search:** The search engine must handle common misspellings (e.g., "Playstaion") so users don't miss matching inventory.
-  * **Barcode/UPC Scanning:** Utilizing the mobile app, users can scan a physical game or console barcode to instantly search the platform for local availability or current market pricing.
   * **Saved Searches & Alerts:** Users can save specific search parameters (e.g., "Condition: CIB, Platform: N64, Max Price: $50") and receive automated digests of new matching inventory.
 * **Store Interactions & Trust:**
   * **Favorites:** Users can "favorite" specific stores to prioritize their inventory in feeds.
@@ -244,6 +245,7 @@ High-performance RESTful API built on Fastify and Prisma ORM.
 3. **Store Inventory (`/api/stores/:storeId/items`)**:
    - Scoped CRUD operations for inventory items.
    - Bulk CSV/Excel inventory upload processing.
+   - AI image search (`POST /api/stores/:storeId/inventory/identify`, planned) that identifies the items in an uploaded photo for staff-verified intake.
 
 4. **Search & Discovery (`/api/search`)**:
    - Unauthenticated multi-store search powered by PostgreSQL full-text search (`tsvector` + GIN).
@@ -261,17 +263,23 @@ Cross-platform native mobile application targeting retro game enthusiasts.
 - **Data Fetching & State:** **TanStack React Query** for network resilience, caching, and offline state management.
 - **Styling:** NativeWind (Tailwind CSS v3) + React Native Reusables for accessible, native-feeling UI components.
 - **Gesture & Motion:** `react-native-gesture-handler`, `react-native-reanimated`, and `@gorhom/bottom-sheet`.
+- **Camera:** `expo-camera` for still-photo capture during inventory intake (microphone and barcode scanning disabled).
 - **Data Integration:** Typed HTTP client (`lib/api.ts`) leveraging types directly from `@scryable/shared`.
 
 #### Core User Flows & UI Modules
 1. **Browse & Search:**
-   - Live query input with triggerable search action and barcode scanning.
+   - Live query input with triggerable search action.
    - Paginated infinite scroll via `FlatList` with optimistic UI feedback (skeletons/spinners) driven by React Query.
 2. **Filter Drawer:**
    - Modal bottom sheet driven by `@gorhom/bottom-sheet`.
    - Filter taxonomy selection for Platform, Category, and Condition.
 3. **Store & Item Details:**
    - Seamless deep-linking to specific items or stores, facilitating hold requests and local store discovery.
+4. **Inventory Intake (Store Staff, `app/store/[storeId]/inventory/add.tsx`):**
+   - Camera permission flow, then a full-screen `expo-camera` capture view.
+   - Photo review step: staff retake the picture or confirm it before anything is uploaded.
+   - The confirmed photo is sent to the AI image search (React Query mutation); identified items are listed with skeleton loading and retry on failure.
+   - Review & submit (next increment): edit each identified item, discard false matches, verify, and submit verified items to the store inventory.
 
 ---
 
@@ -672,8 +680,28 @@ The following functionality requires API endpoints to be developed:
 
 ### Advanced Store Management (Merchant Portal)
 * **`POST /api/stores/:storeId/inventory/bulk`**: Upload a CSV or Excel file to perform bulk insertion/updates of inventory.
-* **`POST /api/utils/parse-image`**: Upload an image to an AI integration layer to automatically suggest item title, platform, and condition.
-* **`GET /api/utils/market-price`**: Fetch market pricing suggestions (e.g., PriceCharting proxy) based on a UPC/barcode or Title+Platform.
+* **`POST /api/stores/:storeId/inventory/identify`** *(new endpoint)*: AI image search for inventory intake.
+  * **Auth:** Bearer session; restricted to the store's `owner`/`staff` and platform `admin`s (`403` otherwise).
+  * **Request:** `multipart/form-data` with a single `image` file (JPEG/PNG).
+  * **Success Response (200 OK):** `IdentifyItemsResponse` from `@scryable/shared` — an array of every item found in the picture, each with the inventory catalog fields:
+    ```json
+    {
+      "items": [
+        {
+          "title": "Super Mario World",
+          "description": "Cartridge, box and manual. Light shelf wear on the box.",
+          "platform": "SNES",
+          "category": "game",
+          "condition": "cib",
+          "price": 89.99,
+          "imageUrls": []
+        }
+      ]
+    }
+    ```
+  * **Error Responses:** `400` (missing/invalid image), `401`, `403`, `413` (image too large), `422` (image could not be processed). An image with no recognisable items returns `200` with `"items": []`.
+  * **Notes:** The endpoint only identifies; it never writes inventory. Staff-verified items are created through `POST /api/stores/:storeId/items` (or the bulk endpoint).
+* **`GET /api/utils/market-price`**: Fetch market pricing suggestions (e.g., PriceCharting proxy) based on Title + Platform + Condition.
 * **`POST /api/webhooks/pos`**: Dedicated authenticated route to ingest Point-of-Sale events to automatically flag items as `isSold: true`.
 
 ### Moderation & Administration (Super Admin)
@@ -731,7 +759,7 @@ Within each feature directory, all necessary domain-specific code is co-located:
 *   `stores/`: Local state management (e.g., Zustand or context) specific to the feature.
 
 ### 9.2 Benefits of Feature Isolation
-*   **Clear Boundaries:** Developers can modify the `search` feature (e.g., updating the barcode scanner) without risking side effects in the `inventory` management feature.
+*   **Clear Boundaries:** Developers can modify the `search` feature (e.g., changing the filter taxonomy) without risking side effects in the `inventory` management feature.
 *   **Backend Alignment:** The frontend feature folders directly mirror the API route structures in `apps/api`, establishing a unified mental model across the full stack.
 *   **Access Control Mapping:** Features often map directly to user roles. The `inventory` and `admin` modules are naturally gated for Store Owners and Admins, making route protection straightforward.
 
@@ -784,8 +812,8 @@ The current search relies on SQL `ILIKE`/`contains: query, mode: 'insensitive'` 
 Flesh out the responsive web portal using **React Router v7 (framework mode)** and **Shadcn UI** to allow shop owners to manage inventory via desktop, process bulk CSV uploads, and review analytics.
 3. **Geo-Location Search & Radius Queries:**  
    The `Store` schema already supports `latitude` and `longitude`. The next step is to implement PostGIS or standard bounding-box radius queries in the Fastify API to power the "Stores near me" local discovery feed on the mobile client.
-4. **AI Parsing & Pricing Integrations:**  
-   Develop the planned API utilities (`/api/utils/parse-image` and `/api/utils/market-price`) integrating third-party AI vision models and market aggregators (like PriceCharting) to streamline item entry for merchants.
+4. **AI Image Search & Pricing Integrations:**  
+   Build the AI image search endpoint (`POST /api/stores/:storeId/inventory/identify`) on a third-party vision model, returning every item identified in a photo, and the `/api/utils/market-price` utility backed by market aggregators (like PriceCharting) to propose prices. The mobile inventory-intake page currently calls a client-side stub of the identify endpoint (`identifyItems` in `apps/mobile/lib/api.ts`) until it ships.
 5. **Hold Requests & Wishlists Engine:**  
    Implement the planned API endpoints for inventory reservations (Holds) and create a background worker or database trigger system to dispatch notifications when new inventory matches user Wishlist parameters.
 6. **POS Webhook Synchronization:**  

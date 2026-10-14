@@ -1,4 +1,4 @@
-// apps/mobile/app/components/FilterSheet.tsx
+// apps/mobile/features/search/components/FilterSheet.tsx
 import { forwardRef, useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';

@@ -1,6 +1,9 @@
 // apps/mobile/tailwind.config.js
+const { hairlineWidth } = require('nativewind/theme');
+
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   // Tell Tailwind where to look for className usage
   content: [
     './app/**/*.{js,ts,jsx,tsx}',
@@ -12,37 +15,55 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        // ── Backgrounds ────────────────────────────
-        bg: {
-          base: '#0f0f23',      // Screen background
-          surface: '#1a1a2e',   // Cards, inputs, sheet background
-          elevated: '#2a2a4a',  // Tags, chips, hover states
-          overlay: '#3a3a5a',   // Borders on elevated surfaces
+        // ── Semantic tokens (React Native Reusables / shadcn) ──
+        // Values live in global.css so components stay theme-agnostic.
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
         },
-        // ── Brand / Accent ─────────────────────────
-        brand: {
-          DEFAULT: '#7c3aed',   // Primary purple — buttons, focus rings
-          light: '#9d5ef5',     // Lighter purple — borders on active chips
-          dim: '#4a2590',       // Dimmed purple — disabled state
-          muted: '#3d1f7a',     // Very dim — active chip background
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
         },
-        // ── Text ───────────────────────────────────
-        text: {
-          primary: '#e0e0e0',   // Main body text
-          secondary: '#c0c0e0', // Chip labels, subdued text
-          muted: '#a0a0c0',     // Section labels
-          dim: '#888888',       // Placeholders, filter labels
-          faint: '#666666',     // Empty state text
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
         },
-        // ── Semantic ───────────────────────────────
+        success: 'hsl(var(--success))',
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
         accent: {
-          purple: '#a78bfa',    // Tags, links
-          green: '#34d399',     // Price, success
-          red: '#ef4444',       // Errors, sold badge
-          'red-bg': '#2a1a1a',  // Sold badge background
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
         },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
+        },
+      },
+      borderRadius: {
+        lg: 'var(--radius)',
+        md: 'calc(var(--radius) - 2px)',
+        sm: 'calc(var(--radius) - 4px)',
+      },
+      borderWidth: {
+        hairline: hairlineWidth(),
       },
     },
   },
-  plugins: [],
+  future: {
+    hoverOnlyWhenSupported: true,
+  },
+  plugins: [require('tailwindcss-animate')],
 };

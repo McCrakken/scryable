@@ -1,21 +1,23 @@
 // apps/mobile/features/search/components/SearchScreen.tsx
 import { useMemo, useRef, useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  FlatList,
-  TouchableOpacity,
-  ActivityIndicator,
-  RefreshControl,
-} from 'react-native';
+import { View, FlatList, ActivityIndicator, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
-import BottomSheet from '@gorhom/bottom-sheet';
+import type { BottomSheetModal } from '@gorhom/bottom-sheet';
+import Animated, { FadeIn, FadeOut, LinearTransition } from 'react-native-reanimated';
 import { hashKey } from '@tanstack/react-query';
-import type { InventoryItem } from '@scryable/shared';
-import { ui } from '@/lib/styles';
+import SlidersHorizontal from 'lucide-react-native/icons/sliders-horizontal';
+import X from 'lucide-react-native/icons/x';
+import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
+import { Input } from '@/components/ui/input';
+import { Text } from '@/components/ui/text';
+import { THEME } from '@/lib/theme';
 import { useSearchItems, type SearchFilters } from '../api';
 import { FilterSheet, type FilterValues } from './FilterSheet';
+import { ItemCard, ItemCardSkeleton } from './ItemCard';
+
+const FILTER_KEYS = ['platform', 'category', 'condition'] as const;
+const SKELETON_COUNT = 4;
 
 function toSearchFilters(query: string, filters: FilterValues): SearchFilters {
   const trimmed = query.trim();
@@ -24,7 +26,7 @@ function toSearchFilters(query: string, filters: FilterValues): SearchFilters {
 
 export function SearchScreen() {
   const router = useRouter();
-  const filterSheetRef = useRef<BottomSheet>(null);
+  const filterSheetRef = useRef<BottomSheetModal>(null);
 
   const [query, setQuery] = useState('');
   const [stagedFilters, setStagedFilters] = useState<FilterValues>({});
@@ -62,7 +64,7 @@ export function SearchScreen() {
 
   const handleApplyFilters = () => {
     setAppliedFilters(stagedFilters);
-    filterSheetRef.current?.close();
+    filterSheetRef.current?.dismiss();
     handleSearch(stagedFilters);
   };
 
@@ -93,91 +95,72 @@ export function SearchScreen() {
 
   const activeFilterCount = Object.values(appliedFilters).filter(Boolean).length;
 
-  const renderItem = ({ item }: { item: InventoryItem }) => (
-    <TouchableOpacity
-      className={ui.card}
-      onPress={() =>
-        router.push({
-          pathname: '/item/[storeId]/[itemId]',
-          params: { storeId: item.storeId, itemId: item.id },
-        })
-      }
-    >
-      <Text className={ui.subheading + ' mb-1.5'}>{item.title}</Text>
-      <View className="flex-row gap-2 mb-2">
-        <Text className={ui.tag}>{item.platform}</Text>
-        <Text className={ui.tag}>{item.condition}</Text>
-        <Text className={ui.tag}>{item.category}</Text>
-      </View>
-      <Text className={ui.price}>${Number(item.price).toFixed(2)}</Text>
-    </TouchableOpacity>
-  );
-
   return (
-    <View className={ui.screen + ' pt-4'}>
+    <View className="flex-1 bg-background px-4 pt-4">
       {/* Search bar + Filters button */}
-      <View className="flex-row gap-2.5 mb-2.5">
-        <TextInput
-          className={ui.input}
+      <View className="mb-2.5 flex-row gap-2.5">
+        <Input
+          className="h-12 flex-1"
           placeholder="Search games, consoles, accessories…"
-          placeholderTextColor="#888"
           value={query}
           onChangeText={setQuery}
           returnKeyType="search"
           onSubmitEditing={() => handleSearch()}
         />
-        <TouchableOpacity
-          className={ui.btnSecondary}
+        <Button
+          variant="secondary"
+          className="h-12 border border-input"
           onPress={() => {
             setStagedFilters(appliedFilters);
-            filterSheetRef.current?.expand();
+            filterSheetRef.current?.present();
           }}
-          activeOpacity={0.7}
         >
-          <Text className={ui.btnSecondaryText}>
+          <Icon as={SlidersHorizontal} size={16} className="text-accent-foreground" />
+          <Text className="text-accent-foreground">
             {activeFilterCount > 0 ? `Filters (${activeFilterCount})` : 'Filters'}
           </Text>
-        </TouchableOpacity>
+        </Button>
       </View>
 
       {/* Search button */}
-      <TouchableOpacity
-        className={`${ui.btnPrimary} mb-3 ${isSearching ? ui.btnPrimaryDisabled : ''}`}
-        onPress={() => handleSearch()}
-        disabled={isSearching}
-        activeOpacity={0.7}
-      >
+      <Button size="lg" className="mb-3 h-12" onPress={() => handleSearch()} disabled={isSearching}>
         {isSearching ? (
-          <ActivityIndicator size="small" color="#fff" />
+          <ActivityIndicator size="small" color={THEME.primaryForeground} />
         ) : (
-          <Text className={ui.btnPrimaryText}>Search</Text>
+          <Text className="text-base font-bold">Search</Text>
         )}
-      </TouchableOpacity>
+      </Button>
 
       {/* Active filter chips */}
       {activeFilterCount > 0 && (
-        <View className="flex-row flex-wrap gap-2 mb-3">
-          {appliedFilters.platform && (
-            <TouchableOpacity className={ui.activeChip} onPress={() => removeFilter('platform')}>
-              <Text className={ui.activeChipText}>{appliedFilters.platform} ✕</Text>
-            </TouchableOpacity>
-          )}
-          {appliedFilters.category && (
-            <TouchableOpacity className={ui.activeChip} onPress={() => removeFilter('category')}>
-              <Text className={ui.activeChipText}>{appliedFilters.category} ✕</Text>
-            </TouchableOpacity>
-          )}
-          {appliedFilters.condition && (
-            <TouchableOpacity className={ui.activeChip} onPress={() => removeFilter('condition')}>
-              <Text className={ui.activeChipText}>{appliedFilters.condition} ✕</Text>
-            </TouchableOpacity>
+        <View className="mb-3 flex-row flex-wrap gap-2">
+          {FILTER_KEYS.map((key) =>
+            appliedFilters[key] ? (
+              <Animated.View
+                key={key}
+                entering={FadeIn.duration(150)}
+                exiting={FadeOut.duration(150)}
+                layout={LinearTransition}
+              >
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full border-primary bg-accent"
+                  onPress={() => removeFilter(key)}
+                  aria-label={`Remove ${appliedFilters[key]} filter`}
+                >
+                  <Text className="text-accent-foreground">{appliedFilters[key]}</Text>
+                  <Icon as={X} size={14} className="text-accent-foreground" />
+                </Button>
+              </Animated.View>
+            ) : null,
           )}
         </View>
       )}
 
       {/* Offline notice: the query is paused and resumes automatically on reconnect */}
       {isOffline && (
-        <Text className={`${ui.muted} text-center mb-3`}>
+        <Text variant="muted" className="mb-3 text-center">
           {items.length > 0
             ? "You're offline. Showing saved results."
             : "You're offline. Results will load when you reconnect."}
@@ -186,20 +169,29 @@ export function SearchScreen() {
 
       {/* Results / Error / Empty state */}
       {error && items.length === 0 ? (
-        <View className="items-center mt-10">
-          <Text className={ui.errorText}>{error.message || 'Search failed. Please try again.'}</Text>
-          <TouchableOpacity
-            onPress={() => refetch()}
-            className="bg-bg-elevated px-6 py-2.5 rounded-lg mt-4"
-          >
-            <Text className="text-text-primary text-sm font-semibold">Retry</Text>
-          </TouchableOpacity>
+        <View className="mt-10 items-center">
+          <Text className="text-center text-destructive">
+            {error.message || 'Search failed. Please try again.'}
+          </Text>
+          <Button variant="secondary" className="mt-4 px-6" onPress={() => refetch()}>
+            <Text className="font-semibold">Retry</Text>
+          </Button>
         </View>
       ) : (
         <FlatList
           data={items}
           keyExtractor={(item) => item.id}
-          renderItem={renderItem}
+          renderItem={({ item }) => (
+            <ItemCard
+              item={item}
+              onPress={() =>
+                router.push({
+                  pathname: '/item/[storeId]/[itemId]',
+                  params: { storeId: item.storeId, itemId: item.id },
+                })
+              }
+            />
+          )}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
           // Dim stale results while a new search loads in their place.
@@ -209,15 +201,19 @@ export function SearchScreen() {
               <RefreshControl
                 refreshing={isPullRefreshing}
                 onRefresh={handlePullRefresh}
-                tintColor="#7c3aed"
+                tintColor={THEME.primary}
               />
             ) : undefined
           }
           ListEmptyComponent={
             isLoading ? (
-              <ActivityIndicator size="large" color="#7c3aed" className="mt-10" />
+              <View>
+                {Array.from({ length: SKELETON_COUNT }, (_, i) => (
+                  <ItemCardSkeleton key={i} />
+                ))}
+              </View>
             ) : (
-              <Text className={`${ui.faint} mt-10`}>
+              <Text variant="muted" className="mt-10 text-center">
                 {submitted
                   ? 'No items found. Try adjusting your filters.'
                   : 'Search for games, consoles, and more.'}
@@ -226,11 +222,13 @@ export function SearchScreen() {
           }
           ListFooterComponent={
             isFetchingNextPage ? (
-              <ActivityIndicator size="large" color="#7c3aed" className="my-4" />
+              <ActivityIndicator size="large" color={THEME.primary} className="my-4" />
             ) : error && items.length > 0 ? (
-              <TouchableOpacity onPress={() => fetchNextPage()} className="items-center my-4">
-                <Text className={ui.errorText}>Couldn&apos;t load more results. Tap to retry.</Text>
-              </TouchableOpacity>
+              <Button variant="ghost" className="my-4" onPress={() => fetchNextPage()}>
+                <Text className="text-destructive">
+                  Couldn&apos;t load more results. Tap to retry.
+                </Text>
+              </Button>
             ) : null
           }
         />

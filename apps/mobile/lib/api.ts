@@ -21,7 +21,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const body = await res.json().catch(() => null);
-    throw new ApiError(res.status, body?.error ?? res.statusText);
+    throw new ApiError(res.status, body?.error ?? res.statusText, body?.code);
   }
 
   return res.json() as Promise<T>;
@@ -31,6 +31,7 @@ export class ApiError extends Error {
   constructor(
     public status: number,
     message: string,
+    public code?: string,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -39,28 +40,28 @@ export class ApiError extends Error {
 
 // ── Search / Browse ──────────────────────────────────────────────
 
-export function searchItems(params: SearchParams) {
+export function searchItems(params: SearchParams, signal?: AbortSignal) {
   const qs = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined && value !== null && value !== '') {
       qs.set(key, String(value));
     }
   }
-  return request<PaginatedResponse<InventoryItem>>(`/api/search?${qs.toString()}`);
+  return request<PaginatedResponse<InventoryItem>>(`/api/search?${qs.toString()}`, { signal });
 }
 
 // ── Stores ───────────────────────────────────────────────────────
 
-export function getStores() {
-  return request<Store[]>('/api/stores');
+export function getStores(signal?: AbortSignal) {
+  return request<Store[]>('/api/stores', { signal });
 }
 
-export function getStore(id: string) {
-  return request<Store>(`/api/stores/${id}`);
+export function getStore(id: string, signal?: AbortSignal) {
+  return request<Store>(`/api/stores/${id}`, { signal });
 }
 
 // ── Item Detail ──────────────────────────────────────────────────
 
-export function getItem(storeId: string, itemId: string) {
-  return request<InventoryItem>(`/api/stores/${storeId}/items/${itemId}`);
+export function getItem(storeId: string, itemId: string, signal?: AbortSignal) {
+  return request<InventoryItem>(`/api/stores/${storeId}/items/${itemId}`, { signal });
 }

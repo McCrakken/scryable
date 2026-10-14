@@ -1,5 +1,5 @@
 // apps/mobile/features/search/components/SearchScreen.tsx
-import { useState, useCallback, useRef } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -7,59 +7,57 @@ import {
   FlatList,
   TouchableOpacity,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import BottomSheet from '@gorhom/bottom-sheet';
-import type { InventoryItem, SearchParams } from '@scryable/shared';
-import { searchItems } from '@/lib/api';
-import { FilterSheet, type FilterValues } from './FilterSheet';
+import { hashKey } from '@tanstack/react-query';
+import type { InventoryItem } from '@scryable/shared';
 import { ui } from '@/lib/styles';
+import { useSearchItems, type SearchFilters } from '../api';
+import { FilterSheet, type FilterValues } from './FilterSheet';
+
+function toSearchFilters(query: string, filters: FilterValues): SearchFilters {
+  const trimmed = query.trim();
+  return { ...(trimmed ? { query: trimmed } : {}), ...filters };
+}
 
 export function SearchScreen() {
   const router = useRouter();
   const filterSheetRef = useRef<BottomSheet>(null);
 
-  const [items, setItems] = useState<InventoryItem[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [hasSearched, setHasSearched] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const [query, setQuery] = useState('');
   const [stagedFilters, setStagedFilters] = useState<FilterValues>({});
   const [appliedFilters, setAppliedFilters] = useState<FilterValues>({});
+  // The search that was actually submitted; null until the first search so nothing is fetched up front.
+  const [submitted, setSubmitted] = useState<SearchFilters | null>(null);
+  const [isPullRefreshing, setIsPullRefreshing] = useState(false);
 
-  const fetchItems = useCallback(
-    async (pageNum: number, filters: FilterValues, append = false) => {
-      setLoading(true);
-      setError(null);
-      try {
-        const params: SearchParams = {
-          page: pageNum,
-          limit: 20,
-          ...(query ? { query } : {}),
-          ...(filters.platform ? { platform: filters.platform } : {}),
-          ...(filters.category ? { category: filters.category } : {}),
-          ...(filters.condition ? { condition: filters.condition } : {}),
-        };
-        const result = await searchItems(params);
-        setItems((prev) => (append ? [...prev, ...result.data] : result.data));
-        setTotalPages(result.totalPages);
-        setHasSearched(true);
-      } catch (err) {
-        console.error('Search failed:', err);
-        setError(err instanceof Error ? err.message : 'Search failed. Please try again.');
-      } finally {
-        setLoading(false);
-      }
-    },
-    [query],
-  );
+  const {
+    data,
+    error,
+    isLoading,
+    isFetching,
+    isFetchingNextPage,
+    isPlaceholderData,
+    fetchStatus,
+    hasNextPage,
+    fetchNextPage,
+    refetch,
+  } = useSearchItems(submitted);
+
+  const items = useMemo(() => data?.pages.flatMap((page) => page.data) ?? [], [data]);
+  const isSearching = isFetching && !isFetchingNextPage;
+  const isOffline = fetchStatus === 'paused';
 
   const handleSearch = (filters: FilterValues = appliedFilters) => {
-    setPage(1);
-    fetchItems(1, filters);
+    const next = toSearchFilters(query, filters);
+    // Re-submitting the same search wouldn't change the query key, so refresh it explicitly.
+    if (submitted && hashKey([next]) === hashKey([submitted])) {
+      refetch();
+    } else {
+      setSubmitted(next);
+    }
   };
 
   const handleApplyFilters = () => {
@@ -82,11 +80,15 @@ export function SearchScreen() {
   };
 
   const loadMore = () => {
-    if (page < totalPages && !loading) {
-      const next = page + 1;
-      setPage(next);
-      fetchItems(next, appliedFilters, true);
+    if (hasNextPage && !isFetchingNextPage && !error) {
+      fetchNextPage();
     }
+  };
+
+  const handlePullRefresh = async () => {
+    setIsPullRefreshing(true);
+    await refetch();
+    setIsPullRefreshing(false);
   };
 
   const activeFilterCount = Object.values(appliedFilters).filter(Boolean).length;
@@ -140,12 +142,12 @@ export function SearchScreen() {
 
       {/* Search button */}
       <TouchableOpacity
-        className={`${ui.btnPrimary} mb-3 ${loading ? ui.btnPrimaryDisabled : ''}`}
+        className={`${ui.btnPrimary} mb-3 ${isSearching ? ui.btnPrimaryDisabled : ''}`}
         onPress={() => handleSearch()}
-        disabled={loading}
+        disabled={isSearching}
         activeOpacity={0.7}
       >
-        {loading && !items.length ? (
+        {isSearching ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
           <Text className={ui.btnPrimaryText}>Search</Text>
@@ -173,12 +175,21 @@ export function SearchScreen() {
         </View>
       )}
 
+      {/* Offline notice: the query is paused and resumes automatically on reconnect */}
+      {isOffline && (
+        <Text className={`${ui.muted} text-center mb-3`}>
+          {items.length > 0
+            ? "You're offline. Showing saved results."
+            : "You're offline. Results will load when you reconnect."}
+        </Text>
+      )}
+
       {/* Results / Error / Empty state */}
-      {error ? (
+      {error && items.length === 0 ? (
         <View className="items-center mt-10">
-          <Text className={ui.errorText}>{error}</Text>
+          <Text className={ui.errorText}>{error.message || 'Search failed. Please try again.'}</Text>
           <TouchableOpacity
-            onPress={() => handleSearch()}
+            onPress={() => refetch()}
             className="bg-bg-elevated px-6 py-2.5 rounded-lg mt-4"
           >
             <Text className="text-text-primary text-sm font-semibold">Retry</Text>
@@ -191,18 +202,35 @@ export function SearchScreen() {
           renderItem={renderItem}
           onEndReached={loadMore}
           onEndReachedThreshold={0.5}
+          // Dim stale results while a new search loads in their place.
+          className={isPlaceholderData ? 'opacity-50' : undefined}
+          refreshControl={
+            submitted ? (
+              <RefreshControl
+                refreshing={isPullRefreshing}
+                onRefresh={handlePullRefresh}
+                tintColor="#7c3aed"
+              />
+            ) : undefined
+          }
           ListEmptyComponent={
-            !loading ? (
+            isLoading ? (
+              <ActivityIndicator size="large" color="#7c3aed" className="mt-10" />
+            ) : (
               <Text className={`${ui.faint} mt-10`}>
-                {hasSearched
+                {submitted
                   ? 'No items found. Try adjusting your filters.'
                   : 'Search for games, consoles, and more.'}
               </Text>
-            ) : null
+            )
           }
           ListFooterComponent={
-            loading && items.length > 0 ? (
+            isFetchingNextPage ? (
               <ActivityIndicator size="large" color="#7c3aed" className="my-4" />
+            ) : error && items.length > 0 ? (
+              <TouchableOpacity onPress={() => fetchNextPage()} className="items-center my-4">
+                <Text className={ui.errorText}>Couldn&apos;t load more results. Tap to retry.</Text>
+              </TouchableOpacity>
             ) : null
           }
         />

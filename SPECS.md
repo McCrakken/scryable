@@ -52,7 +52,7 @@ The project utilizes a multi-layered architecture managed via **Yarn Berry (v4)*
 The presentation layer is split into two distinct applications optimized for their respective platforms. Both clients utilize **TanStack React Query** for asynchronous state management, providing built-in caching, offline resilience, and graceful degradation.
 
 **Mobile Client (`apps/mobile`):**
-  *   **Technology:** React Native (v0.81) and Expo SDK 54.
+  *   **Technology:** React Native (v0.86), React 19.2, and Expo SDK 57.
   *   **Routing:** Expo Router for file-based routing and seamless deep-linking.
   *   **UI/UX:** Styled using NativeWind (Tailwind CSS for React Native) and React Native Reusables. It leverages `react-native-reanimated` and `react-native-gesture-handler` to ensure fluid, interruptible, 60 FPS native animations and gestures.
 
@@ -256,7 +256,8 @@ High-performance RESTful API built on Fastify and Prisma ORM.
 Cross-platform native mobile application targeting retro game enthusiasts.
 
 #### Technology Stack
-- **Framework:** React Native 0.81, React 19, Expo SDK 54 with Expo Router v6 (file-based navigation).
+- **Framework:** React Native 0.86, React 19.2, Expo SDK 57 with Expo Router (v57, versioned with the SDK; file-based navigation), TypeScript 6.
+- **Platform Targets:** iOS 16.4+ (SDK 57 minimum), built with Xcode 27. The UIKit scene lifecycle required by the iOS 27 SDK is enabled via `expo-build-properties` (`ios.enableSceneSupport`); this setting can be removed on SDK 58+, which includes scene support by default.
 - **Data Fetching & State:** **TanStack React Query** for network resilience, caching, and offline state management.
 - **Styling:** NativeWind (Tailwind CSS v3) + React Native Reusables for accessible, native-feeling UI components.
 - **Gesture & Motion:** `react-native-gesture-handler`, `react-native-reanimated`, and `@gorhom/bottom-sheet`.

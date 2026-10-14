@@ -16,11 +16,12 @@ import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Text } from '@/components/ui/text';
 import { ApiError } from '@/lib/api';
-import { THEME } from '@/lib/theme';
+import { useThemeColors } from '@/lib/theme';
 import { useStore, useStoreItems } from '../api';
 
 export function StoreScreen({ storeId }: { storeId: string }) {
   const router = useRouter();
+  const theme = useThemeColors();
   const store = useStore(storeId);
   const items = useStoreItems(storeId);
   const [isPullRefreshing, setIsPullRefreshing] = useState(false);
@@ -94,7 +95,7 @@ export function StoreScreen({ storeId }: { storeId: string }) {
           <RefreshControl
             refreshing={isPullRefreshing}
             onRefresh={handlePullRefresh}
-            tintColor={THEME.primary}
+            tintColor={theme.primary}
           />
         }
       />

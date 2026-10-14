@@ -51,6 +51,14 @@ module.exports = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // ── Raw brand palette, for one-off use; prefer the semantic tokens above ──
+        coral: '#EF767A',
+        baltic: '#456990',
+        ocean: '#49BEAA',
+        turquoise: '#49DCB1',
+        clay: '#EEB868',
+        'harbor-sky': '#8FB3DA',
+        mulberry: '#69353F',
       },
       borderRadius: {
         lg: 'var(--radius)',

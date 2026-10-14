@@ -4,30 +4,63 @@
 
 /*
  * Scryable design tokens (HSL channels, consumed as hsl(var(--token)) in tailwind.config.js).
- * The app ships a single dark palette, so it lives on :root; keep lib/theme.ts in sync.
+ * Light palette on :root, dark on .dark:root (NativeWind follows the system appearance);
+ * keep lib/theme.ts in sync.
+ *
+ * Brand pops: Light Coral #ef767a, Baltic Blue #456990, Ocean Mist #49beaa,
+ * Turquoise #49dcb1, Sunlit Clay #eeb868, plus Harbor Sky #8fb3da (light Baltic Blue).
+ * Light primary is Mulberry #69353f; dark primary is Sunlit Clay. Light Coral is reserved for
+ * destructive/error states. Everything else is a soft off-white (light) or deep Baltic slate (dark).
+ *
+ * accent / accent-foreground convention: accent is a soft tinted surface, and
+ * accent-foreground is the pop color for links and icons. It must read on background,
+ * card and accent.
  */
 @layer base {
   :root {
-    --background: 240 40% 9.8%;          /* #0f0f23 */
-    --foreground: 0 0% 87.8%;            /* #e0e0e0 */
-    --card: 240 27.8% 14.1%;             /* #1a1a2e */
-    --card-foreground: 0 0% 87.8%;
-    --popover: 240 27.8% 14.1%;
-    --popover-foreground: 0 0% 87.8%;
-    --primary: 262.1 83.3% 57.8%;        /* #7c3aed */
+    --background: 40 18% 96.5%;          /* #f8f7f4 soft off-white */
+    --foreground: 213 30% 16%;           /* #1d2835 Baltic ink */
+    --card: 40 20% 99%;                  /* #fdfdfc */
+    --card-foreground: 213 30% 16%;
+    --popover: 40 20% 99%;
+    --popover-foreground: 213 30% 16%;
+    --primary: 348.5 32.9% 31%;          /* #69353f Mulberry */
     --primary-foreground: 0 0% 100%;
-    --secondary: 240 27.6% 22.7%;        /* #2a2a4a */
-    --secondary-foreground: 240 34% 81.6%; /* #c0c0e0 */
-    --muted: 240 27.6% 22.7%;
-    --muted-foreground: 240 20.3% 69%;   /* #a0a0c0 */
-    --accent: 259.8 59.5% 30%;           /* #3d1f7a */
-    --accent-foreground: 255.1 91.7% 76.3%; /* #a78bfa */
-    --destructive: 0 84.2% 60.2%;        /* #ef4444 */
+    --secondary: 40 14% 91%;             /* #ebe9e5 */
+    --secondary-foreground: 213 30% 16%;
+    --muted: 40 14% 91%;
+    --muted-foreground: 35 6% 38%;       /* #67625b */
+    --accent: 211 45% 92%;               /* #e1eaf4 Baltic Blue tint */
+    --accent-foreground: 211.2 35.2% 41.8%; /* #456990 Baltic Blue */
+    --destructive: 358 60% 50%;          /* #cc3338 Light Coral, deepened for text contrast */
     --destructive-foreground: 0 0% 100%;
-    --success: 158.1 64.4% 51.6%;        /* #34d399 */
-    --border: 240 27.6% 22.7%;           /* #2a2a4a */
-    --input: 240 21.6% 29%;              /* #3a3a5a */
-    --ring: 265 88.3% 66.5%;             /* #9d5ef5 */
+    --success: 169.7 60% 30%;            /* #1f7a6b deep Ocean Mist */
+    --border: 40 12% 86%;                /* #e0ddd7 */
+    --input: 40 9% 77%;                  /* #c9c6bf */
+    --ring: 211.2 35.2% 41.8%;           /* #456990 */
     --radius: 0.625rem;
+  }
+
+  .dark:root {
+    --background: 213 30% 10%;           /* #121a21 deep Baltic slate */
+    --foreground: 40 40% 94%;            /* #f6f2ea warm white */
+    --card: 213 26% 14%;                 /* #1a232d */
+    --card-foreground: 40 40% 94%;
+    --popover: 213 26% 14%;
+    --popover-foreground: 40 40% 94%;
+    --primary: 35.8 79.8% 67.1%;         /* #eeb868 Sunlit Clay */
+    --primary-foreground: 213 30% 10%;
+    --secondary: 213 22% 20%;            /* #283139 */
+    --secondary-foreground: 40 40% 94%;
+    --muted: 213 22% 20%;
+    --muted-foreground: 38 12% 68%;      /* #b4ada1 */
+    --accent: 211.2 33% 24%;             /* #293d52 Baltic Blue, deepened */
+    --accent-foreground: 211 50% 71%;    /* #8fb3da Harbor Sky (light Baltic Blue) */
+    --destructive: 358 79.1% 70%;        /* #ef767a Light Coral */
+    --destructive-foreground: 213 30% 10%;
+    --success: 162.4 67.7% 57.5%;        /* #49dcb1 Turquoise */
+    --border: 213 20% 22%;               /* #2d3843 */
+    --input: 213 18% 28%;                /* #3a4654 */
+    --ring: 162.4 67.7% 57.5%;           /* #49dcb1 */
   }
 }

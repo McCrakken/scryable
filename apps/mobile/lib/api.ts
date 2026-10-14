@@ -61,6 +61,11 @@ export function getStore(id: string, signal?: AbortSignal) {
   return request<Store>(`/api/stores/${id}`, { signal });
 }
 
+/** Every item in a store's catalog, sold items included (promoted first, then newest). */
+export function getStoreItems(storeId: string, signal?: AbortSignal) {
+  return request<InventoryItem[]>(`/api/stores/${storeId}/items`, { signal });
+}
+
 // ── Item Detail ──────────────────────────────────────────────────
 
 export function getItem(storeId: string, itemId: string, signal?: AbortSignal) {

@@ -1,7 +1,8 @@
 {
   "expo": {
-    "name": "Scryable",
-    "slug": "Scryable",
+    "name": "scryable",
+    "slug": "scryable",
+    "scheme": "scryable",
     "version": "0.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -22,7 +23,7 @@
         "backgroundColor": "#1a1a2e"
       },
       "package": "com.scryable.mobile",
-      "edgeToEdgeEnabled": true,
+      "edgeToEdgeEnabled": true
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -1,11 +1,18 @@
 // apps/mobile/features/search/components/FilterSheet.tsx
 import { forwardRef, useCallback, useMemo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import BottomSheet, { BottomSheetScrollView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import { View } from 'react-native';
+import {
+  BottomSheetModal,
+  BottomSheetScrollView,
+  BottomSheetBackdrop,
+} from '@gorhom/bottom-sheet';
 import type { BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import type { Platform, Category, Condition } from '@scryable/shared';
 import { PLATFORMS, CATEGORIES, CONDITIONS } from '@scryable/shared';
-import { ui } from '@/lib/styles';
+import { Button } from '@/components/ui/button';
+import { Text } from '@/components/ui/text';
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { THEME } from '@/lib/theme';
 
 export interface FilterValues {
   platform?: Platform;
@@ -37,101 +44,111 @@ const CATEGORY_LABELS: Record<Category, string> = {
   other: 'Other',
 };
 
-export const FilterSheet = forwardRef<BottomSheet, FilterSheetProps>(
+interface FilterGroupProps<T extends string> {
+  label: string;
+  options: readonly T[];
+  value: T | undefined;
+  onChange: (value: T | undefined) => void;
+  getLabel?: (option: T) => string;
+}
+
+/** Single-select chip group; tapping the selected chip clears it. */
+function FilterGroup<T extends string>({
+  label,
+  options,
+  value,
+  onChange,
+  getLabel = (option) => option,
+}: FilterGroupProps<T>) {
+  return (
+    <View className="mt-5">
+      <Text className="mb-2.5 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </Text>
+      <ToggleGroup
+        type="single"
+        variant="outline"
+        value={value}
+        onValueChange={(next) => onChange(next as T | undefined)}
+        className="flex-wrap gap-2"
+      >
+        {options.map((option) => (
+          <ToggleGroupItem
+            key={option}
+            value={option}
+            aria-label={getLabel(option)}
+            className="rounded-full border px-4"
+          >
+            <Text>{getLabel(option)}</Text>
+          </ToggleGroupItem>
+        ))}
+      </ToggleGroup>
+    </View>
+  );
+}
+
+export const FilterSheet = forwardRef<BottomSheetModal, FilterSheetProps>(
   ({ values, onChange, onApply, onClear }, ref) => {
     const snapPoints = useMemo(() => ['60%', '90%'], []);
 
     const renderBackdrop = useCallback(
       (props: BottomSheetBackdropProps) => (
-        <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />
+        <BottomSheetBackdrop
+          {...props}
+          disappearsOnIndex={-1}
+          appearsOnIndex={0}
+          pressBehavior="close"
+        />
       ),
       [],
     );
 
-    const toggle = <T,>(key: keyof FilterValues, value: T, current: T | undefined) => {
-      onChange({ ...values, [key]: current === value ? undefined : value });
-    };
-
     return (
-      <BottomSheet
+      <BottomSheetModal
         ref={ref}
-        index={-1}
         snapPoints={snapPoints}
+        // Keep the fixed 60% / 90% detents instead of v5's content-height snap point.
+        enableDynamicSizing={false}
         enablePanDownToClose
         backdropComponent={renderBackdrop}
-        backgroundStyle={{ backgroundColor: '#1a1a2e' }}
-        handleIndicatorStyle={{ backgroundColor: '#4a4a6a', width: 40 }}
+        backgroundStyle={{ backgroundColor: THEME.card }}
+        handleIndicatorStyle={{ backgroundColor: THEME.input, width: 40 }}
       >
         <BottomSheetScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}>
           {/* Header */}
-          <View className={ui.sheetHeader}>
-            <Text className={ui.sheetTitle}>Filters</Text>
-            <TouchableOpacity onPress={onClear}>
-              <Text className={ui.sheetClear}>Clear All</Text>
-            </TouchableOpacity>
+          <View className="flex-row items-center justify-between py-4">
+            <Text variant="h4">Filters</Text>
+            <Button variant="link" onPress={onClear} className="px-0">
+              <Text className="text-base text-accent-foreground">Clear All</Text>
+            </Button>
           </View>
 
-          {/* Platform */}
-          <Text className={`${ui.label} mt-5 mb-2.5`}>Platform</Text>
-          <View className="flex-row flex-wrap gap-2">
-            {PLATFORMS.map((p) => (
-              <TouchableOpacity
-                key={p}
-                className={values.platform === p ? ui.chipActive : ui.chip}
-                onPress={() => toggle('platform', p, values.platform)}
-                activeOpacity={0.7}
-              >
-                <Text className={values.platform === p ? ui.chipTextActive : ui.chipText}>
-                  {p}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
+          <FilterGroup
+            label="Platform"
+            options={PLATFORMS}
+            value={values.platform}
+            onChange={(platform) => onChange({ ...values, platform })}
+          />
+          <FilterGroup
+            label="Category"
+            options={CATEGORIES}
+            value={values.category}
+            onChange={(category) => onChange({ ...values, category })}
+            getLabel={(c) => CATEGORY_LABELS[c]}
+          />
+          <FilterGroup
+            label="Condition"
+            options={CONDITIONS}
+            value={values.condition}
+            onChange={(condition) => onChange({ ...values, condition })}
+            getLabel={(c) => CONDITION_LABELS[c]}
+          />
 
-          {/* Category */}
-          <Text className={`${ui.label} mt-5 mb-2.5`}>Category</Text>
-          <View className="flex-row flex-wrap gap-2">
-            {CATEGORIES.map((c) => (
-              <TouchableOpacity
-                key={c}
-                className={values.category === c ? ui.chipActive : ui.chip}
-                onPress={() => toggle('category', c, values.category)}
-                activeOpacity={0.7}
-              >
-                <Text className={values.category === c ? ui.chipTextActive : ui.chipText}>
-                  {CATEGORY_LABELS[c]}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Condition */}
-          <Text className={`${ui.label} mt-5 mb-2.5`}>Condition</Text>
-          <View className="flex-row flex-wrap gap-2">
-            {CONDITIONS.map((c) => (
-              <TouchableOpacity
-                key={c}
-                className={values.condition === c ? ui.chipActive : ui.chip}
-                onPress={() => toggle('condition', c, values.condition)}
-                activeOpacity={0.7}
-              >
-                <Text className={values.condition === c ? ui.chipTextActive : ui.chipText}>
-                  {CONDITION_LABELS[c]}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-
-          {/* Apply */}
-          <TouchableOpacity
-            className={`${ui.btnPrimary} mt-8`}
-            onPress={onApply}
-            activeOpacity={0.8}
-          >
-            <Text className={ui.btnPrimaryText}>Apply Filters</Text>
-          </TouchableOpacity>
+          <Button size="lg" onPress={onApply} className="mt-8">
+            <Text className="text-base font-bold">Apply Filters</Text>
+          </Button>
         </BottomSheetScrollView>
-      </BottomSheet>
+      </BottomSheetModal>
     );
   },
 );
